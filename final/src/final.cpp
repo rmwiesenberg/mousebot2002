@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <Servo.h>
-#include "final.h"
+#include "NewPing.h"
+#include "ps2.h"
 
 #define RIGHT_MOTOR_PIN 4
 #define LEFT_MOTOR_PIN 5
@@ -24,11 +25,15 @@ enum wallState{
 globalState gState = FIND_FLAME;
 wallState wState;
 
+void wallFollow(void);
+
 void setup() {
   rightMotor.attach(RIGHT_MOTOR_PIN, 1000, 2000);
   leftMotor.attach(LEFT_MOTOR_PIN, 1000, 2000);
   turretMotor.attach(TURRET_MOTOR_PIN, 1000, 2000);
   turretServo.attach(TURRET_SERVO_PIN);
+
+  Serial.begin(9600);
 }
 
 void loop() {
@@ -38,7 +43,7 @@ void loop() {
     break;
 
     case FIND_FLAME:
-
+      wallFollow();
     break;
 
     case TO_FLAME:
@@ -51,9 +56,14 @@ void loop() {
     break;
 
     case GO_HOME:
+      wallFollow();
     break;
 
     case STOP:
     break;
   }
+}
+
+void wallFollow(){
+
 }
