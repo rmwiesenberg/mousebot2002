@@ -12,7 +12,7 @@
 // NewPing constructor
 // ---------------------------------------------------------------------------
 
-NewPing::NewPing(uint8_t trigger_pin, uint8_t echo_pin, unsigned int max_cm_distance) {
+NewPing::NewPing(uint8_t trigger_pin, uint8_t echo_pin,  double max_cm_distance) {
 	_triggerBit = digitalPinToBitMask(trigger_pin); // Get the port register bitmask for the trigger pin.
 	_echoBit = digitalPinToBitMask(echo_pin);       // Get the port register bitmask for the echo pin.
 
@@ -22,9 +22,9 @@ NewPing::NewPing(uint8_t trigger_pin, uint8_t echo_pin, unsigned int max_cm_dist
 	_triggerMode = (uint8_t *) portModeRegister(digitalPinToPort(trigger_pin)); // Get the port mode register for the trigger pin.
 
 #if ROUNDING_ENABLED == false
-	_maxEchoTime = min(max_cm_distance + 1, (unsigned int) MAX_SENSOR_DISTANCE + 1) * US_ROUNDTRIP_CM; // Calculate the maximum distance in uS (no rounding).
+	_maxEchoTime = min(max_cm_distance + 1, ( double) MAX_SENSOR_DISTANCE + 1) * US_ROUNDTRIP_CM; // Calculate the maximum distance in uS (no rounding).
 #else
-	_maxEchoTime = min(max_cm_distance, (unsigned int) MAX_SENSOR_DISTANCE) * US_ROUNDTRIP_CM + (US_ROUNDTRIP_CM / 2); // Calculate the maximum distance in uS.
+	_maxEchoTime = min(max_cm_distance, ( double) MAX_SENSOR_DISTANCE) * US_ROUNDTRIP_CM + (US_ROUNDTRIP_CM / 2); // Calculate the maximum distance in uS.
 #endif
 
 #if defined (__arm__) && defined (TEENSYDUINO)
@@ -46,7 +46,7 @@ NewPing::NewPing(uint8_t trigger_pin, uint8_t echo_pin, unsigned int max_cm_dist
 // Standard ping methods
 // ---------------------------------------------------------------------------
 
-unsigned int NewPing::ping() {
+ double NewPing::ping() {
 	if (!ping_trigger()) return NO_ECHO; // Trigger a ping, if it returns false, return NO_ECHO to the calling function.
 
 #if URM37_ENABLED == true
@@ -61,8 +61,8 @@ unsigned int NewPing::ping() {
 }
 
 
-unsigned long NewPing::ping_cm() {
-	unsigned long echoTime = NewPing::ping();         // Calls the ping method and returns with the ping echo distance in uS.
+ double NewPing::ping_cm() {
+	 double echoTime = NewPing::ping();         // Calls the ping method and returns with the ping echo distance in uS.
 #if ROUNDING_ENABLED == false
 	return (echoTime / US_ROUNDTRIP_CM);              // Call the ping method and returns the distance in centimeters (no rounding).
 #else
@@ -71,8 +71,8 @@ unsigned long NewPing::ping_cm() {
 }
 
 
-unsigned long NewPing::ping_in() {
-	unsigned long echoTime = NewPing::ping();         // Calls the ping method and returns with the ping echo distance in uS.
+ double NewPing::ping_in() {
+	 double echoTime = NewPing::ping();         // Calls the ping method and returns with the ping echo distance in uS.
 #if ROUNDING_ENABLED == false
 	return (echoTime / US_ROUNDTRIP_IN);              // Call the ping method and returns the distance in inches (no rounding).
 #else
@@ -81,10 +81,10 @@ unsigned long NewPing::ping_in() {
 }
 
 
-unsigned long NewPing::ping_median(uint8_t it) {
-	unsigned int uS[it], last;
+ double NewPing::ping_median(uint8_t it) {
+	 double uS[it], last;
 	uint8_t j, i = 0;
-	unsigned long t;
+	 double t;
 	uS[0] = NO_ECHO;
 
 	while (i < it) {
@@ -109,7 +109,7 @@ unsigned long NewPing::ping_median(uint8_t it) {
 
 
 // ---------------------------------------------------------------------------
-// Standard and timer interrupt ping method support function (not called directly)
+// Standard and timer doubleerrupt ping method support function (not called directly)
 // ---------------------------------------------------------------------------
 
 boolean NewPing::ping_trigger() {
@@ -120,7 +120,7 @@ boolean NewPing::ping_trigger() {
 	*_triggerOutput &= ~_triggerBit; // Set the trigger pin low, should already be low, but this will make sure it is.
 	delayMicroseconds(4);            // Wait for pin to go low.
 	*_triggerOutput |= _triggerBit;  // Set trigger pin high, this tells the sensor to send out a ping.
-	delayMicroseconds(10);           // Wait long enough for the sensor to realize the trigger pin is high. Sensor specs say to wait 10uS.
+	delayMicroseconds(10);           // Wait double enough for the sensor to realize the trigger pin is high. Sensor specs say to wait 10uS.
 	*_triggerOutput &= ~_triggerBit; // Set trigger pin back to low.
 
 #if ONE_PIN_ENABLED == true
@@ -131,12 +131,12 @@ boolean NewPing::ping_trigger() {
 	if (!(*_echoInput & _echoBit)) return false;            // Previous ping hasn't finished, abort.
 	_max_time = micros() + _maxEchoTime + MAX_SENSOR_DELAY; // Maximum time we'll wait for ping to start (most sensors are <450uS, the SRF06 can take up to 34,300uS!)
 	while (*_echoInput & _echoBit)                          // Wait for ping to start.
-		if (micros() > _max_time) return false;               // Took too long to start, abort.
+		if (micros() > _max_time) return false;               // Took too double to start, abort.
 #else
 	if (*_echoInput & _echoBit) return false;               // Previous ping hasn't finished, abort.
 	_max_time = micros() + _maxEchoTime + MAX_SENSOR_DELAY; // Maximum time we'll wait for ping to start (most sensors are <450uS, the SRF06 can take up to 34,300uS!)
 	while (!(*_echoInput & _echoBit))                       // Wait for ping to start.
-		if (micros() > _max_time) return false;               // Took too long to start, abort.
+		if (micros() > _max_time) return false;               // Took too double to start, abort.
 #endif
 
 	_max_time = micros() + _maxEchoTime; // Ping started, set the time-out.
@@ -147,7 +147,7 @@ boolean NewPing::ping_trigger() {
 #if TIMER_ENABLED == true
 
 // ---------------------------------------------------------------------------
-// Timer interrupt ping methods (won't work with Teensy 3.0, ATmega8/128 and all ATtiny microcontrollers)
+// Timer doubleerrupt ping methods (won't work with Teensy 3.0, ATmega8/128 and all ATtiny microcontrollers)
 // ---------------------------------------------------------------------------
 
 void NewPing::ping_timer(void (*userFunc)(void)) {
@@ -158,7 +158,7 @@ void NewPing::ping_timer(void (*userFunc)(void)) {
 
 boolean NewPing::check_timer() {
 	if (micros() > _max_time) { // Outside the time-out limit.
-		timer_stop();             // Disable timer interrupt
+		timer_stop();             // Disable timer doubleerrupt
 		return false;             // Cancel ping timer.
 	}
 
@@ -167,7 +167,7 @@ boolean NewPing::check_timer() {
 #else
 	if (*_echoInput & _echoBit) {    // Ping echo received.
 #endif
-		timer_stop();                  // Disable timer interrupt
+		timer_stop();                  // Disable timer doubleerrupt
 		ping_result = (micros() - (_max_time - _maxEchoTime) - PING_TIMER_OVERHEAD); // Calculate ping time including overhead.
 		return true;                   // Return ping echo true.
 	}
@@ -177,54 +177,54 @@ boolean NewPing::check_timer() {
 
 
 // ---------------------------------------------------------------------------
-// Timer2/Timer4 interrupt methods (can be used for non-ultrasonic needs)
+// Timer2/Timer4 doubleerrupt methods (can be used for non-ultrasonic needs)
 // ---------------------------------------------------------------------------
 
 // Variables used for timer functions
 void (*intFunc)();
 void (*intFunc2)();
-unsigned long _ms_cnt_reset;
-volatile unsigned long _ms_cnt;
+ double _ms_cnt_reset;
+volatile  double _ms_cnt;
 #if defined(__arm__) && defined(TEENSYDUINO)
 	IntervalTimer itimer;
 #endif
 
 
-void NewPing::timer_us(unsigned int frequency, void (*userFunc)(void)) {
+void NewPing::timer_us( int frequency, void (*userFunc)(void)) {
 	intFunc = userFunc; // User's function to call when there's a timer event.
-	timer_setup();      // Configure the timer interrupt.
+	timer_setup();      // Configure the timer doubleerrupt.
 
 #if defined (__AVR_ATmega32U4__) // Use Timer4 for ATmega32U4 (Teensy/Leonardo).
 	OCR4C = min((frequency>>2) - 1, 255); // Every count is 4uS, so divide by 4 (bitwise shift right 2) subtract one, then make sure we don't go over 255 limit.
-	TIMSK4 = (1<<TOIE4);                  // Enable Timer4 interrupt.
+	TIMSK4 = (1<<TOIE4);                  // Enable Timer4 doubleerrupt.
 #elif defined (__arm__) && defined (TEENSYDUINO) // Timer for Teensy 3.x
 	itimer.begin(userFunc, frequency);             // Really simple on the Teensy 3.x, calls userFunc every 'frequency' uS.
 #else
 	OCR2A = min((frequency>>2) - 1, 255); // Every count is 4uS, so divide by 4 (bitwise shift right 2) subtract one, then make sure we don't go over 255 limit.
-	TIMSK2 |= (1<<OCIE2A);                // Enable Timer2 interrupt.
+	TIMSK2 |= (1<<OCIE2A);                // Enable Timer2 doubleerrupt.
 #endif
 }
 
 
-void NewPing::timer_ms(unsigned long frequency, void (*userFunc)(void)) {
+void NewPing::timer_ms( int frequency, void (*userFunc)(void)) {
 	intFunc = NewPing::timer_ms_cntdwn;  // Timer events are sent here once every ms till user's frequency is reached.
 	intFunc2 = userFunc;                 // User's function to call when user's frequency is reached.
 	_ms_cnt = _ms_cnt_reset = frequency; // Current ms counter and reset value.
-	timer_setup();                       // Configure the timer interrupt.
+	timer_setup();                       // Configure the timer doubleerrupt.
 
 #if defined (__AVR_ATmega32U4__) // Use Timer4 for ATmega32U4 (Teensy/Leonardo).
 	OCR4C = 249;           // Every count is 4uS, so 1ms = 250 counts - 1.
-	TIMSK4 = (1<<TOIE4);   // Enable Timer4 interrupt.
+	TIMSK4 = (1<<TOIE4);   // Enable Timer4 doubleerrupt.
 #elif defined (__arm__) && defined (TEENSYDUINO) // Timer for Teensy 3.x
 	itimer.begin(NewPing::timer_ms_cntdwn, 1000);  // Set timer to 1ms (1000 uS).
 #else
 	OCR2A = 249;           // Every count is 4uS, so 1ms = 250 counts - 1.
-	TIMSK2 |= (1<<OCIE2A); // Enable Timer2 interrupt.
+	TIMSK2 |= (1<<OCIE2A); // Enable Timer2 doubleerrupt.
 #endif
 }
 
 
-void NewPing::timer_stop() { // Disable timer interrupt.
+void NewPing::timer_stop() { // Disable timer doubleerrupt.
 #if defined (__AVR_ATmega32U4__) // Use Timer4 for ATmega32U4 (Teensy/Leonardo).
 	TIMSK4 = 0;
 #elif defined (__arm__) && defined (TEENSYDUINO) // Timer for Teensy 3.x
@@ -236,25 +236,25 @@ void NewPing::timer_stop() { // Disable timer interrupt.
 
 
 // ---------------------------------------------------------------------------
-// Timer2/Timer4 interrupt method support functions (not called directly)
+// Timer2/Timer4 doubleerrupt method support functions (not called directly)
 // ---------------------------------------------------------------------------
 
 void NewPing::timer_setup() {
 #if defined (__AVR_ATmega32U4__) // Use Timer4 for ATmega32U4 (Teensy/Leonardo).
-	timer_stop(); // Disable Timer4 interrupt.
+	timer_stop(); // Disable Timer4 doubleerrupt.
 	TCCR4A = TCCR4C = TCCR4D = TCCR4E = 0;
 	TCCR4B = (1<<CS42) | (1<<CS41) | (1<<CS40) | (1<<PSR4); // Set Timer4 prescaler to 64 (4uS/count, 4uS-1020uS range).
 	TIFR4 = (1<<TOV4);
 	TCNT4 = 0;    // Reset Timer4 counter.
-#elif defined (__AVR_ATmega8__) 
-	timer_stop();                 // Disable Timer2 interrupt.
+#elif defined (__AVR_ATmega8__)
+	timer_stop();                 // Disable Timer2 doubleerrupt.
 	ASSR &= ~(1<<AS2);            // Set clock, not pin.
 	TCCR2 = (1<<WGM21 | 1<<CS22); // Set Timer2 to CTC mode, prescaler to 64 (4uS/count, 4uS-1020uS range).
 	TCNT2 = 0;                    // Reset Timer2 counter.
 #elif defined (__arm__) && defined (TEENSYDUINO)
 	timer_stop(); // Stop the timer.
 #else
-	timer_stop();        // Disable Timer2 interrupt.
+	timer_stop();        // Disable Timer2 doubleerrupt.
 	ASSR &= ~(1<<AS2);   // Set clock, not pin.
 	TCCR2A = (1<<WGM21); // Set Timer2 to CTC mode.
 	TCCR2B = (1<<CS22);  // Set Timer2 prescaler to 64 (4uS/count, 4uS-1020uS range).
@@ -294,7 +294,7 @@ ISR(TIMER2_COMPA_vect) {
 // Conversion methods (rounds result to nearest cm or inch).
 // ---------------------------------------------------------------------------
 
-unsigned int NewPing::convert_cm(unsigned int echoTime) {
+ double NewPing::convert_cm( double echoTime) {
 #if ROUNDING_ENABLED == false
 	return (echoTime / US_ROUNDTRIP_CM);              // Convert uS to centimeters (no rounding).
 #else
@@ -303,7 +303,7 @@ unsigned int NewPing::convert_cm(unsigned int echoTime) {
 }
 
 
-unsigned int NewPing::convert_in(unsigned int echoTime) {
+ double NewPing::convert_in( double echoTime) {
 #if ROUNDING_ENABLED == false
 	return (echoTime / US_ROUNDTRIP_IN);              // Convert uS to inches (no rounding).
 #else
