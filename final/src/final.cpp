@@ -1,8 +1,9 @@
 #include <Arduino.h>
 #include <Servo.h>
+#include <LiquidCrystal.h>
 #include "NewPing.cpp"
 #include "ps2.cpp"
-#include <LiquidCrystal.h>
+#include "PID_v1.cpp"
 
 // Start Definitions
 // Pin Definitions
@@ -13,6 +14,7 @@
 
 // Motor Declarations
 Servo rightMotor, leftMotor, turretMotor, turretServo;
+int rightSpeed, leftSpeed;
 
 // Motor Speed Definitions
 #define MOTOR_MAX_FRW 180
@@ -35,6 +37,18 @@ NewPing leftURF(LEFT_URF_TRIG, LEFT_URF_ECHO);
 // Variables for URFs
 double rightDist, midDist, leftDist;
 
+// PID
+#define TARGET_DIST 8
+#define SAMPLE_TIME 10
+
+double pidInput, pidOutput, pidSetpoint;
+double Kp = 2, Ki = 1, Kd = 1;
+const double pidError = .25;
+
+PID pid(&pidInput, &pidOutput, &pidSetpoint, Kp, Ki, Kd, DIRECT);
+
+// LCD Declaration
+LiquidCrystal lcd(40, 41, 42, 43, 44, 45);
 
 // States for General Robot Running
 enum robotState{
@@ -48,8 +62,7 @@ enum robotState{
 };
 
 enum wallState{
-  RIGHT_FOLLOW, // Follow wall if on left side
-  LEFT_FOLLOW, // Follow wall if on right side
+  FOLLOW, // Follow wall
   CORNER, // Turn through corner
   WALL_END // Turn around wall end
 };
@@ -58,32 +71,46 @@ robotState rState = INIT; //start global state as INIT
 wallState wState; // Delcare variable for wall following state
 
 // Function Declarations
-void wallFollow(void);
+void regDrive(int speed);
+void pidDrive(int speed);
 void pingWall(void);
-void closeWall(void);
+void lcdPrintWallDist(void);
+char closeWall(void);
+void wallSwitch(void);
+void wallFollow(char wall);
 
 void setup() {
   // Serial port for debugging
   Serial.begin(9600);
-  Serial.println("Start");
 
   // Attach Motors
   rightMotor.attach(RIGHT_MOTOR_PIN, 1000, 2000);
   leftMotor.attach(LEFT_MOTOR_PIN, 1000, 2000);
   turretMotor.attach(TURRET_MOTOR_PIN, 1000, 2000);
   turretServo.attach(TURRET_SERVO_PIN);
+
+  // PID setup
+  pidSetpoint = TARGET_DIST; // sets dist from wall
+  pid.SetOutputLimits(MOTOR_MAX_REV, MOTOR_STOP); // sets limits
+  pid.SetSampleTime(SAMPLE_TIME);
+  pid.SetMode(AUTOMATIC); // turns PID on
+
+  // LCD Start
+  lcd.begin(16,2);
 }
 
 void loop(void) {
   switch (rState) {
     case INIT:
-      pingWall();
-      closeWall();
-      rState = FIND_FLAME;
+    pingWall();
+    rState = FIND_FLAME;
+    wState = FOLLOW;
     break;
 
     case FIND_FLAME:
-      wallFollow();
+    pingWall();
+    lcdPrintWallDist();
+    wallSwitch();
     break;
 
     case TO_FLAME:
@@ -93,13 +120,12 @@ void loop(void) {
     break;
 
     case FIND_WALL:
-      pingWall();
-      closeWall();
-      rState = GO_HOME;
+    pingWall();
+    rState = GO_HOME;
     break;
 
     case GO_HOME:
-      wallFollow();
+    wallSwitch();
     break;
 
     case STOP:
@@ -107,17 +133,29 @@ void loop(void) {
   }
 }
 
-void wallFollow(void){
-  pingWall();
+// Drive Robot
+void regDrive(int speed){
+  leftMotor.write(MOTOR_MAX_FRW-speed);
+  rightMotor.write(speed);
+}
 
-  Serial.print("Left: ");
-  Serial.print(leftDist);
-  Serial.print("  Mid: ");
-  Serial.print(midDist);
-  Serial.print("  Right: ");
-  Serial.println(rightDist);
+// Drive Robot for PID
+void pidDrive(int speed){
+  leftMotor.write(MOTOR_STOP - speed);
+  rightMotor.write(MOTOR_STOP - speed);
+}
 
-  delay(100);
+// Switch between wall following states
+void wallSwitch(){
+  switch (wState) {
+    case FOLLOW:
+    wallFollow(closeWall());
+    break;
+    case CORNER:
+    break;
+    case WALL_END:
+    break;
+  }
 }
 
 // determine distances to each wall
@@ -127,6 +165,53 @@ void pingWall(void){
   leftDist = leftURF.ping_in();
 }
 
-void closeWall(){
+// print wall distances to the LCD
+void lcdPrintWallDist(){
+  lcd.setCursor(0,0);
+  lcd.print("L: ");
+  lcd.print(leftDist);
 
+  lcd.setCursor(7,0);
+  lcd.print(" R: ");
+  lcd.print(rightDist);
+
+  lcd.setCursor(0,1);
+  lcd.print("M: ");
+  lcd.print(midDist);
+
+  lcd.setCursor(7,1);
+  lcd.print(" W: ");
+  lcd.print(closeWall());
+}
+
+// determines closest wall - left or right
+// used for figuring out which wall to follow
+char closeWall(){
+  char result;
+
+  if ((rightDist > 0) && (rightDist < leftDist)) result = 'R';
+  else if ((leftDist > 0) && (leftDist < rightDist)) result = 'L';
+  else if ((rightDist == 0) && (leftDist == 0)) result = 'x';
+
+  return result;
+}
+
+// uses PID to follow wall
+void wallFollow(char wall){
+  pid.Compute();
+  if (wall == 'L'){
+    if (leftDist <= (TARGET_DIST + pidError) && leftDist >= (TARGET_DIST - pidError)){
+      regDrive(MOTOR_MAX_FRW);
+    } else {
+      pidInput = leftDist;
+      pidDrive((int) pidOutput);
+    }
+  } else if (wall == 'R'){
+    if (rightDist <= (TARGET_DIST + pidError) && rightDist >= (TARGET_DIST - pidError)){
+      regDrive(MOTOR_MAX_FRW);
+    } else {
+      pidInput = rightDist;
+      pidDrive(-((int) pidOutput));
+    }
+  }
 }
