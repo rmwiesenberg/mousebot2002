@@ -1,87 +1,18 @@
-#include <Arduino.h>
-#include <Servo.h>
-#include <LiquidCrystal.h>
-#include "NewPing.cpp"
-#include "ps2.cpp"
-#include "PID_v1.cpp"
+/***************  RBE2002 Final Code  ***************/
+/**************    Team 4: Mousebot   ***************/
 
-// Start Definitions
-// Pin Definitions
-#define RIGHT_MOTOR_PIN 4
-#define LEFT_MOTOR_PIN 5
-#define TURRET_MOTOR_PIN 6
-#define TURRET_SERVO_PIN 7
+/**************      Richard Cole     ***************/
+/**************    Elijah Eldredge    ***************/
+/**************    Ryan Wiesenberg    ***************/
 
-// Motor Declarations
-Servo rightMotor, leftMotor, turretMotor, turretServo;
-int rightSpeed, leftSpeed;
-
-// Motor Speed Definitions
-#define MOTOR_MAX_FRW 180
-#define MOTOR_STOP 90
-#define MOTOR_MAX_REV 0
-
-// Ultrasonic Range Finder Pins
-#define RIGHT_URF_TRIG 24
-#define MID_URF_TRIG 23
-#define LEFT_URF_TRIG 22
-#define RIGHT_URF_ECHO 20
-#define MID_URF_ECHO 19
-#define LEFT_URF_ECHO 2
-
-// URF Declarations
-NewPing rightURF(RIGHT_URF_TRIG, RIGHT_URF_ECHO);
-NewPing midURF(MID_URF_TRIG, MID_URF_ECHO);
-NewPing leftURF(LEFT_URF_TRIG, LEFT_URF_ECHO);
-
-// Variables for URFs
-double rightDist, midDist, leftDist;
-
-// PID
-#define TARGET_DIST 8
-#define SAMPLE_TIME 10
-
-double pidInput, pidOutput, pidSetpoint;
-double Kp = 2, Ki = 1, Kd = 1;
-const double pidError = .25;
-
-PID pid(&pidInput, &pidOutput, &pidSetpoint, Kp, Ki, Kd, DIRECT);
-
-// LCD Declaration
-LiquidCrystal lcd(40, 41, 42, 43, 44, 45);
-
-// States for General Robot Running
-enum robotState{
-  INIT,  // Initialization - Find Walls
-  FIND_FLAME, // Wall Follow to FIND_FLAME
-  TO_FLAME, // After Found Flame. Drive to it
-  EXTINGUISH, // Put out Flame
-  FIND_WALL, // Refind Wall
-  GO_HOME, // Wall Follow Home
-  STOP // Stop Robot
-};
-
-enum wallState{
-  FOLLOW, // Follow wall
-  CORNER, // Turn through corner
-  WALL_END // Turn around wall end
-};
-
-robotState rState = INIT; //start global state as INIT
-wallState wState; // Delcare variable for wall following state
-
-// Function Declarations
-void regDrive(int speed);
-void pidDrive(int speed);
-void pingWall(void);
-void lcdPrintWallDist(void);
-char closeWall(void);
-void wallSwitch(void);
-void wallFollow(char wall);
+#include "final.h" // constants or other includes in other file for neatness
 
 void setup() {
   // Serial port for debugging
   Serial.begin(9600);
+
+  // LCD Start
+  lcd.begin(16,2);
 
   // Attach Motors
   rightMotor.attach(RIGHT_MOTOR_PIN, 1000, 2000);
@@ -91,69 +22,63 @@ void setup() {
 
   // PID setup
   pidSetpoint = TARGET_DIST; // sets dist from wall
-  pid.SetOutputLimits(MOTOR_MAX_REV, MOTOR_STOP); // sets limits
+  pid.SetOutputLimits(MOTOR_MAX_REV, (MOTOR_STOP - MIN_SPEED)); // sets limits
   pid.SetSampleTime(SAMPLE_TIME);
   pid.SetMode(AUTOMATIC); // turns PID on
-
-  // LCD Start
-  lcd.begin(16,2);
 }
 
 void loop(void) {
   switch (rState) {
-    case INIT:
-    pingWall();
+    case INIT: // wall distance initializations
+    // pingWall();
     rState = FIND_FLAME;
     wState = FOLLOW;
     break;
 
-    case FIND_FLAME:
+    case FIND_FLAME: // wall following to find flame
     pingWall();
     lcdPrintWallDist();
     wallSwitch();
     break;
 
-    case TO_FLAME:
+    case TO_FLAME: // moving toward flame
     break;
 
-    case EXTINGUISH:
+    case EXTINGUISH: // extinguishing flame
     break;
 
-    case FIND_WALL:
+    case FIND_WALL: // re-find and drive to wall
     pingWall();
     rState = GO_HOME;
     break;
 
-    case GO_HOME:
+    case GO_HOME: // wall following home
     wallSwitch();
     break;
 
-    case STOP:
+    case STOP: // made it home
+    regDrive(MOTOR_STOP);
     break;
   }
 }
 
 // Drive Robot
+// called if robot just needs to drive straight
 void regDrive(int speed){
   leftMotor.write(MOTOR_MAX_FRW-speed);
   rightMotor.write(speed);
 }
 
-// Drive Robot for PID
-void pidDrive(int speed){
-  leftMotor.write(MOTOR_STOP - speed);
-  rightMotor.write(MOTOR_STOP - speed);
-}
 
 // Switch between wall following states
 void wallSwitch(){
   switch (wState) {
-    case FOLLOW:
+    case FOLLOW: // following wall
     wallFollow(closeWall());
     break;
-    case CORNER:
+    case CORNER: // turning 90 degrees at a corner
     break;
-    case WALL_END:
+    case WALL_END: // turning around the end of a wall
     break;
   }
 }
@@ -167,18 +92,22 @@ void pingWall(void){
 
 // print wall distances to the LCD
 void lcdPrintWallDist(){
+  // print left
   lcd.setCursor(0,0);
   lcd.print("L: ");
   lcd.print(leftDist);
 
+  // print right
   lcd.setCursor(7,0);
   lcd.print(" R: ");
   lcd.print(rightDist);
 
+  // print mid
   lcd.setCursor(0,1);
   lcd.print("M: ");
   lcd.print(midDist);
 
+  // print closest wall
   lcd.setCursor(7,1);
   lcd.print(" W: ");
   lcd.print(closeWall());
@@ -186,6 +115,7 @@ void lcdPrintWallDist(){
 
 // determines closest wall - left or right
 // used for figuring out which wall to follow
+// 'R' - right wall; 'L' - left wall; 'x' - debugging
 char closeWall(){
   char result;
 
@@ -198,20 +128,40 @@ char closeWall(){
 
 // uses PID to follow wall
 void wallFollow(char wall){
-  pid.Compute();
+  // case for left wall being closer to robot
   if (wall == 'L'){
+    pidInput = leftDist;
+    pid.Compute(); // pid detects if it needs to run again
+
+    // determine if dist is out of range of error
     if (leftDist <= (TARGET_DIST + pidError) && leftDist >= (TARGET_DIST - pidError)){
       regDrive(MOTOR_MAX_FRW);
     } else {
-      pidInput = leftDist;
-      pidDrive((int) pidOutput);
+      if (leftDist < TARGET_DIST){ // is wall is closer
+        leftMotor.write(MOTOR_STOP + MIN_SPEED + (int) pidOutput);
+        rightMotor.write(MOTOR_STOP - MIN_SPEED);
+      } else if (leftDist > TARGET_DIST){ // if wall is further
+        leftMotor.write(MOTOR_STOP + MIN_SPEED);
+        rightMotor.write(MOTOR_STOP - MIN_SPEED - (int) pidOutput);
+      }
     }
+
+    // case for right wall being closer to robot
   } else if (wall == 'R'){
+    pidInput = rightDist;
+    pid.Compute(); // pid detects if it needs to run again
+
+    // determine if dist is out of range of error
     if (rightDist <= (TARGET_DIST + pidError) && rightDist >= (TARGET_DIST - pidError)){
       regDrive(MOTOR_MAX_FRW);
     } else {
-      pidInput = rightDist;
-      pidDrive(-((int) pidOutput));
+        if (rightDist < TARGET_DIST){ // is wall is closer
+        leftMotor.write(MOTOR_STOP + MIN_SPEED);
+        rightMotor.write(MOTOR_STOP - MIN_SPEED - (int) pidOutput);
+      } else if (rightDist > TARGET_DIST){ // if wall is further
+        leftMotor.write(MOTOR_STOP + MIN_SPEED + (int) pidOutput);
+        rightMotor.write(MOTOR_STOP - MIN_SPEED);
+      }
     }
   }
 }
