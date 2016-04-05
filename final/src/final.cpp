@@ -22,7 +22,7 @@ void setup() {
 
   // PID setup
   pidSetpoint = TARGET_DIST; // sets dist from wall
-  pid.SetOutputLimits(MOTOR_MAX_REV, (MOTOR_STOP - MIN_SPEED)); // sets limits
+  pid.SetOutputLimits((-MOTOR_STOP + MIN_SPEED), (MOTOR_STOP - MIN_SPEED)); // sets limits
   pid.SetSampleTime(SAMPLE_TIME);
   pid.SetMode(AUTOMATIC); // turns PID on
 }
@@ -142,7 +142,7 @@ void wallFollow(char wall){
         rightMotor.write(MOTOR_STOP - MIN_SPEED);
       } else if (leftDist > TARGET_DIST){ // if wall is further
         leftMotor.write(MOTOR_STOP + MIN_SPEED);
-        rightMotor.write(MOTOR_STOP - MIN_SPEED - (int) pidOutput);
+        rightMotor.write(MOTOR_STOP - MIN_SPEED + (int) pidOutput);
       }
     }
 
@@ -159,7 +159,7 @@ void wallFollow(char wall){
         leftMotor.write(MOTOR_STOP + MIN_SPEED);
         rightMotor.write(MOTOR_STOP - MIN_SPEED - (int) pidOutput);
       } else if (rightDist > TARGET_DIST){ // if wall is further
-        leftMotor.write(MOTOR_STOP + MIN_SPEED + (int) pidOutput);
+        leftMotor.write(MOTOR_STOP + MIN_SPEED - (int) pidOutput);
         rightMotor.write(MOTOR_STOP - MIN_SPEED);
       }
     }
