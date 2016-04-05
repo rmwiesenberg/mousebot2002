@@ -22,7 +22,7 @@ void setup() {
 
   // PID setup
   pidSetpoint = TARGET_DIST; // sets dist from wall
-  pid.SetOutputLimits((-MOTOR_STOP + MIN_SPEED), (MOTOR_STOP - MIN_SPEED)); // sets limits
+  pid.SetOutputLimits(MOTOR_MAX_REV, (MOTOR_STOP - MIN_SPEED)); // sets limits for PID (essentially -60 to 60)
   pid.SetSampleTime(SAMPLE_TIME);
   pid.SetMode(AUTOMATIC); // turns PID on
 }
@@ -110,26 +110,34 @@ void lcdPrintWallDist(){
   // print closest wall
   lcd.setCursor(7,1);
   lcd.print(" W: ");
-  lcd.print(closeWall());
+  if (closeWall() == RIGHT){
+    lcd.print("R");
+  } else if (closeWall() == LEFT){
+    lcd.print("L");
+  } else if (closeWall() == ZERO){
+    lcd.print("Z");
+  } else {
+    lcd.print("E");
+  }
 }
 
 // determines closest wall - left or right
 // used for figuring out which wall to follow
 // 'R' - right wall; 'L' - left wall; 'x' - debugging
-char closeWall(){
-  char result;
+cWall closeWall(){
+  cWall result;
 
-  if ((rightDist > 0) && (rightDist < leftDist)) result = 'R';
-  else if ((leftDist > 0) && (leftDist < rightDist)) result = 'L';
-  else if ((rightDist == 0) && (leftDist == 0)) result = 'x';
+  if ((rightDist > 0) && (rightDist < leftDist)) result = RIGHT;
+  else if ((leftDist > 0) && (leftDist < rightDist)) result = LEFT;
+  else if ((rightDist == 0) && (leftDist == 0)) result = ZERO;
 
   return result;
 }
 
 // uses PID to follow wall
-void wallFollow(char wall){
+void wallFollow(cWall wall){
   // case for left wall being closer to robot
-  if (wall == 'L'){
+  if (wall == LEFT){
     pidInput = leftDist;
     pid.Compute(); // pid detects if it needs to run again
 
@@ -138,16 +146,16 @@ void wallFollow(char wall){
       regDrive(MOTOR_MAX_FRW);
     } else {
       if (leftDist < TARGET_DIST){ // is wall is closer
-        leftMotor.write(MOTOR_STOP + MIN_SPEED + (int) pidOutput);
-        rightMotor.write(MOTOR_STOP - MIN_SPEED);
+        leftMotor.write(MOTOR_STOP - MIN_SPEED - (int) pidOutput);
+        rightMotor.write(MOTOR_STOP + MIN_SPEED);
       } else if (leftDist > TARGET_DIST){ // if wall is further
-        leftMotor.write(MOTOR_STOP + MIN_SPEED);
-        rightMotor.write(MOTOR_STOP - MIN_SPEED + (int) pidOutput);
+        leftMotor.write(MOTOR_STOP - MIN_SPEED);
+        rightMotor.write(MOTOR_STOP + MIN_SPEED + (int) pidOutput);
       }
     }
 
     // case for right wall being closer to robot
-  } else if (wall == 'R'){
+  } else if (wall == RIGHT){
     pidInput = rightDist;
     pid.Compute(); // pid detects if it needs to run again
 
@@ -156,11 +164,11 @@ void wallFollow(char wall){
       regDrive(MOTOR_MAX_FRW);
     } else {
         if (rightDist < TARGET_DIST){ // is wall is closer
-        leftMotor.write(MOTOR_STOP + MIN_SPEED);
-        rightMotor.write(MOTOR_STOP - MIN_SPEED - (int) pidOutput);
+        leftMotor.write(MOTOR_STOP - MIN_SPEED);
+        rightMotor.write(MOTOR_STOP + MIN_SPEED + (int) pidOutput);
       } else if (rightDist > TARGET_DIST){ // if wall is further
-        leftMotor.write(MOTOR_STOP + MIN_SPEED - (int) pidOutput);
-        rightMotor.write(MOTOR_STOP - MIN_SPEED);
+        leftMotor.write(MOTOR_STOP - MIN_SPEED - (int) pidOutput);
+        rightMotor.write(MOTOR_STOP + MIN_SPEED);
       }
     }
   }

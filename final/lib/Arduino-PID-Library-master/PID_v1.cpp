@@ -53,7 +53,7 @@ bool PID::Compute()
    {
       /*Compute all the working error variables*/
 	  double input = *myInput;
-      double error = *mySetpoint - input;
+      double error = abs(*mySetpoint - input);
       ITerm+= (ki * error);
       if(ITerm > outMax) ITerm= outMax;
       else if(ITerm < outMin) ITerm= outMin;

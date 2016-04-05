@@ -70,6 +70,13 @@ enum wallState{
   WALL_END // Turn around wall end
 };
 
+enum cWall{
+  DEBUG,
+  RIGHT,
+  LEFT,
+  ZERO
+};
+
 robotState rState = INIT; //start global state as INIT
 wallState wState; // Delcare variable for wall following state
 
@@ -77,6 +84,6 @@ wallState wState; // Delcare variable for wall following state
 void regDrive(int speed);
 void pingWall(void);
 void lcdPrintWallDist(void);
-char closeWall(void);
+cWall closeWall(void);
 void wallSwitch(void);
-void wallFollow(char wall);
+void wallFollow(cWall wall);
