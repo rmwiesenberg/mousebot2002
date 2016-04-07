@@ -30,7 +30,8 @@ void setup() {
 void loop(void) {
   switch (rState) {
     case INIT: // wall distance initializations
-    // pingWall();
+    pingWall();
+    findWall();
     rState = FIND_FLAME;
     wState = FOLLOW;
     break;
@@ -74,7 +75,7 @@ void regDrive(int speed){
 void wallSwitch(){
   switch (wState) {
     case FOLLOW: // following wall
-    wallFollow(closeWall());
+    wallFollow();
     break;
     case CORNER: // turning 90 degrees at a corner
     break;
@@ -110,34 +111,35 @@ void lcdPrintWallDist(){
   // print closest wall
   lcd.setCursor(7,1);
   lcd.print(" W: ");
-  if (closeWall() == RIGHT){
+   switch (closeWall()) { // print closest wall
+    case RIGHT:
     lcd.print("R");
-  } else if (closeWall() == LEFT){
+    break;
+    case LEFT:
     lcd.print("L");
-  } else if (closeWall() == ZERO){
+    break;
+    case ZERO:
     lcd.print("Z");
-  } else {
-    lcd.print("E");
+    break;
+    case DEBUG:
+    lcd.print("D");
+    break;
   }
 }
 
 // determines closest wall - left or right
 // used for figuring out which wall to follow
-// 'R' - right wall; 'L' - left wall; 'x' - debugging
-cWall closeWall(){
-  cWall result;
-
-  if ((rightDist > 0) && (rightDist < leftDist)) result = RIGHT;
-  else if ((leftDist > 0) && (leftDist < rightDist)) result = LEFT;
-  else if ((rightDist == 0) && (leftDist == 0)) result = ZERO;
-
-  return result;
+// RIGHT - right wall; LEFT - left wall; ZERO - if it can't see any wall
+void findWall(void){
+  if ((rightDist > 0) && (rightDist < leftDist)) cWall = RIGHT;
+  else if ((leftDist > 0) && (leftDist < rightDist)) cWall = LEFT;
+  else if ((rightDist == 0) && (leftDist == 0)) cWall = ZERO;
 }
 
 // uses PID to follow wall
-void wallFollow(cWall wall){
+void wallFollow(void){
   // case for left wall being closer to robot
-  if (wall == LEFT){
+  if (cWall == LEFT){
     pidInput = leftDist;
     pid.Compute(); // pid detects if it needs to run again
 
@@ -155,7 +157,7 @@ void wallFollow(cWall wall){
     }
 
     // case for right wall being closer to robot
-  } else if (wall == RIGHT){
+  } else if (cWall == RIGHT){
     pidInput = rightDist;
     pid.Compute(); // pid detects if it needs to run again
 
@@ -171,5 +173,9 @@ void wallFollow(cWall wall){
         rightMotor.write(MOTOR_STOP + MIN_SPEED);
       }
     }
+
+    // case if no walls are seen
+  } else if (cWall == ZERO) {
+    regDrive(MOTOR_STOP);
   }
 }

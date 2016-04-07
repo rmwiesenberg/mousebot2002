@@ -44,7 +44,7 @@ double rightDist, midDist, leftDist;
 
 // Variables for PID
 double pidInput, pidOutput, pidSetpoint;
-const double Kp = 2, Ki = 1, Kd = 1;
+const double Kp = 2, Ki = .1, Kd = .1;
 const double pidError = 1;
 
 // PID Declarations
@@ -70,7 +70,7 @@ enum wallState{
   WALL_END // Turn around wall end
 };
 
-enum cWall{
+enum closeWall{
   DEBUG,
   RIGHT,
   LEFT,
@@ -79,11 +79,12 @@ enum cWall{
 
 robotState rState = INIT; //start global state as INIT
 wallState wState; // Delcare variable for wall following state
+closeWall cWall = DEBUG;
 
 // Function Declarations
 void regDrive(int speed);
 void pingWall(void);
 void lcdPrintWallDist(void);
-cWall closeWall(void);
+void findWall(void);
 void wallSwitch(void);
-void wallFollow(cWall wall);
+void wallFollow(void);
