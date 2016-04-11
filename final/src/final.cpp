@@ -7,6 +7,8 @@
 
 #include "final.h" // constants or other includes in other file for neatness
 
+char report[80];
+
 void setup() {
   // Serial port for debugging
   Serial.begin(9600);
@@ -32,8 +34,9 @@ void loop(void) {
     case INIT: // wall distance initializations
     pingWall();
     findWall();
-    rState = FIND_FLAME;
-    wState = FOLLOW;
+
+    //rState = FIND_FLAME;
+    //wState = FOLLOW;
     break;
 
     case FIND_FLAME: // wall following to find flame
