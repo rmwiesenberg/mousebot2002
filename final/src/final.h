@@ -1,9 +1,11 @@
 #include <Arduino.h>
 #include <Servo.h>
 #include <LiquidCrystal.h>
-#include "NewPing.cpp"
-#include "ps2.cpp"
-#include "PID_v1.cpp"
+#include "NewPing.h"
+#include "ps2.h"
+#include "PID_v1.h"
+#include "LSM303.h"
+#include <Wire.h>
 
 // Start Definitions
 // Pin Definitions
