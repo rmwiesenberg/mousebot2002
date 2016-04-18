@@ -6,6 +6,7 @@
 #include "PID_v1.h"
 #include "LSM303.h"
 #include <Wire.h>
+#include "turret.h"
 
 // Start Definitions
 // Pin Definitions
@@ -15,7 +16,7 @@
 #define TURRET_SERVO_PIN 7
 
 // Motor Declarations
-Servo rightMotor, leftMotor, turretMotor, turretServo;
+Servo rightMotor, leftMotor;
 int rightSpeed, leftSpeed;
 
 // Motor Speed Definitions
@@ -24,12 +25,12 @@ int rightSpeed, leftSpeed;
 #define MOTOR_MAX_REV 0
 
 // Ultrasonic Range Finder Pins
-#define RIGHT_URF_TRIG 24
-#define MID_URF_TRIG 23
-#define LEFT_URF_TRIG 22
-#define RIGHT_URF_ECHO 20
-#define MID_URF_ECHO 19
-#define LEFT_URF_ECHO 2
+#define RIGHT_URF_TRIG 27
+#define MID_URF_TRIG 25
+#define LEFT_URF_TRIG 23
+#define RIGHT_URF_ECHO 26
+#define MID_URF_ECHO 24
+#define LEFT_URF_ECHO 22
 
 // URF Declarations
 NewPing rightURF(RIGHT_URF_TRIG, RIGHT_URF_ECHO);
@@ -41,16 +42,25 @@ double rightDist, midDist, leftDist;
 
 // PID BASE THINGS
 #define TARGET_DIST 8
+#define MIN_FRONT_DIST 8
+#define MAX_DIST 30
 #define SAMPLE_TIME 10
 #define MIN_SPEED 30
+#define REG_SPEED 30
 
 // Variables for PID
 double pidInput, pidOutput, pidSetpoint;
-const double Kp = 2, Ki = .1, Kd = .1;
-const double pidError = 1;
+const double Kp = .5, Ki = 0, Kd = 0;
+const double pidError = .25;
 
 // PID Declarations
 PID pid(&pidInput, &pidOutput, &pidSetpoint, Kp, Ki, Kd, DIRECT);
+
+// EncoderTurret
+#define ENCODER1_PIN 2
+#define ENCODER2_PIN 3
+
+turret extinguisher(TURRET_MOTOR_PIN, TURRET_SERVO_PIN, ENCODER1_PIN, ENCODER2_PIN)
 
 // LCD Declaration
 LiquidCrystal lcd(40, 41, 42, 43, 44, 45);
@@ -90,3 +100,5 @@ void lcdPrintWallDist(void);
 void findWall(void);
 void wallSwitch(void);
 void wallFollow(void);
+void turnCorner(void);
+void turnEnd(void);
