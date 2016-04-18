@@ -17,8 +17,6 @@ void setup() {
   // Attach Motors
   rightMotor.attach(RIGHT_MOTOR_PIN, 1000, 2000);
   leftMotor.attach(LEFT_MOTOR_PIN, 1000, 2000);
-  turretMotor.attach(TURRET_MOTOR_PIN, 1000, 2000);
-  turretServo.attach(TURRET_SERVO_PIN);
 
   // PID setup
   pidSetpoint = TARGET_DIST; // sets dist from wall
@@ -35,8 +33,9 @@ void loop(void) {
     case INIT: // wall distance initializations
     pingWall();
     findWall();
-    rState = FIND_FLAME;
-    wState = FOLLOW;
+    extinguisher.sweep();
+    //rState = FIND_FLAME;
+    //wState = FOLLOW;
     break;
 
     case FIND_FLAME: // wall following to find flame
