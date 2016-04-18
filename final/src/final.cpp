@@ -7,8 +7,6 @@
 
 #include "final.h" // constants or other includes in other file for neatness
 
-char report[80];
-
 void setup() {
   // Serial port for debugging
   Serial.begin(9600);
@@ -27,6 +25,9 @@ void setup() {
   pid.SetOutputLimits(MOTOR_MAX_REV, (MOTOR_STOP - MIN_SPEED)); // sets limits for PID (essentially -60 to 60)
   pid.SetSampleTime(SAMPLE_TIME);
   pid.SetMode(AUTOMATIC); // turns PID on
+
+  // turret setup
+  extinguisher.turretSetup();
 }
 
 void loop(void) {
@@ -34,13 +35,13 @@ void loop(void) {
     case INIT: // wall distance initializations
     pingWall();
     findWall();
-
-    //rState = FIND_FLAME;
-    //wState = FOLLOW;
+    rState = FIND_FLAME;
+    wState = FOLLOW;
     break;
 
     case FIND_FLAME: // wall following to find flame
     pingWall();
+    findWall();
     lcdPrintWallDist();
     wallSwitch();
     break;
@@ -73,16 +74,24 @@ void regDrive(int speed){
   rightMotor.write(speed);
 }
 
-
 // Switch between wall following states
 void wallSwitch(){
   switch (wState) {
     case FOLLOW: // following wall
     wallFollow();
+    /*
+    if(midDist < MIN_FRONT_DIST) wState = CORNER;
+    if(cWall == LEFT && leftDist > MAX_DIST) wState = WALL_END;
+    if(cWall == RIGHT && rightDist > MAX_DIST) wState = WALL_END;
+    */
     break;
+
     case CORNER: // turning 90 degrees at a corner
+    turnCorner();
     break;
+
     case WALL_END: // turning around the end of a wall
+    turnEnd();
     break;
   }
 }
@@ -114,7 +123,7 @@ void lcdPrintWallDist(){
   // print closest wall
   lcd.setCursor(7,1);
   lcd.print(" W: ");
-   switch (closeWall()) { // print closest wall
+   switch (cWall) { // print closest wall
     case RIGHT:
     lcd.print("R");
     break;
@@ -148,7 +157,7 @@ void wallFollow(void){
 
     // determine if dist is out of range of error
     if (leftDist <= (TARGET_DIST + pidError) && leftDist >= (TARGET_DIST - pidError)){
-      regDrive(MOTOR_MAX_FRW);
+      regDrive(MOTOR_STOP + REG_SPEED);
     } else {
       if (leftDist < TARGET_DIST){ // is wall is closer
         leftMotor.write(MOTOR_STOP - MIN_SPEED - (int) pidOutput);
@@ -166,7 +175,7 @@ void wallFollow(void){
 
     // determine if dist is out of range of error
     if (rightDist <= (TARGET_DIST + pidError) && rightDist >= (TARGET_DIST - pidError)){
-      regDrive(MOTOR_MAX_FRW);
+      regDrive(MOTOR_STOP + REG_SPEED);
     } else {
         if (rightDist < TARGET_DIST){ // is wall is closer
         leftMotor.write(MOTOR_STOP - MIN_SPEED);
@@ -181,4 +190,12 @@ void wallFollow(void){
   } else if (cWall == ZERO) {
     regDrive(MOTOR_STOP);
   }
+}
+
+void turnCorner(){
+
+}
+
+void turnEnd(){
+
 }
