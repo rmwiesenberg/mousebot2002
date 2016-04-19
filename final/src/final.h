@@ -50,7 +50,7 @@ double rightDist, midDist, leftDist;
 
 // Variables for PID
 double pidInput, pidOutput, pidSetpoint;
-const double Kp = .5, Ki = 0, Kd = 0;
+const double Kp = 400, Ki = 0, Kd = 0;
 const double pidError = .25;
 
 // PID Declarations

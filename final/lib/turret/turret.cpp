@@ -1,4 +1,9 @@
 #include "turret.h"
+#define TURRET_SPEED 80
+
+Servo tM, tS;
+Encoder enc(2, 3);
+int tSpeed = TURRET_SPEED;
 
 turret::turret(int pinMotor, int pinServo){
   _pM = pinMotor;
@@ -12,14 +17,10 @@ void turret::turretSetup(){
 }
 
 void turret::sweep(){
-  newPos =+ enc.read();
   tM.write(tSpeed);
-  if (newPos < 15 && newPos >= 0){
-    tM.write(60);
-  } else if (newPos > -15 && newPos <= 0){
-    tM.write(120);
-  } else {
-    if (tSpeed == 60) tSpeed = 120;
-    else tSpeed = 120;
+  if(enc.read() < -100 || enc.read() > 0){
+    if (enc.read() < 0) tSpeed = 180 - TURRET_SPEED;
+    if (enc.read() > 0) tSpeed = TURRET_SPEED;
   }
+  Serial.println(enc.read());
 }
