@@ -33,15 +33,15 @@ void loop(void) {
     case INIT: // wall distance initializations
     pingWall();
     findWall();
-    extinguisher.sweep();
-    //rState = FIND_FLAME;
-    //wState = FOLLOW;
+    rState = FIND_FLAME;
+    wState = FOLLOW;
     break;
 
     case FIND_FLAME: // wall following to find flame
     pingWall();
     findWall();
     lcdPrintWallDist();
+    extinguisher.sweep();
     wallSwitch();
     break;
 
