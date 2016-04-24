@@ -2,7 +2,7 @@
 #define TURRET_SPEED 79
 #define TURRET_HOME 0
 #define SERVO_HOME 100
-#define FOUND_FLAME 800
+#define FOUND_FLAME 500
 
 Servo tM, tS;
 Encoder enc(2, 3);
@@ -62,6 +62,7 @@ void turret::home(){
 }
 
 boolean turret::foundFlame(){
+  Serial.println(analogRead(_pFS));
   if(analogRead(_pFS) < FOUND_FLAME) return true;
   else return false;
 }

@@ -68,6 +68,9 @@ turret extinguisher(TURRET_MOTOR_PIN, TURRET_SERVO_PIN, FLAME_PIN, PHOTO_PIN, FA
 // LCD Declaration
 LiquidCrystal lcd(40, 41, 42, 43, 44, 45);
 
+// UNO Stuff
+#define UNO_PIN1 33
+
 // States for General Robot Running
 enum robotState{
   INIT,  // Initialization - Find Walls

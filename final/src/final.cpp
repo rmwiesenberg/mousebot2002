@@ -8,6 +8,10 @@
 #include "final.h" // constants or other includes in other file for neatness
 
 void setup() {
+  // Uno setup
+  pinMode(UNO_PIN1, OUTPUT);
+  digitalWrite(UNO_PIN1, LOW);
+
   // Serial port for debugging
   Serial.begin(9600);
 
@@ -34,8 +38,8 @@ void loop(void) {
     pingWall();
     findWall();
     extinguisher.zero();
-    //rState = FIND_FLAME;
-    //wState = FOLLOW;
+    rState = FIND_FLAME;
+    wState = FOLLOW;
     break;
 
     case FIND_FLAME: // wall following to find flame
@@ -43,7 +47,10 @@ void loop(void) {
     findWall();
     lcdPrintWallDist();
 
-    wallSwitch();
+    if(extinguisher.foundFlame() == true) digitalWrite(UNO_PIN1, HIGH);
+    else digitalWrite(UNO_PIN1, LOW);
+
+    //wallSwitch();
     break;
 
     case TO_FLAME: // moving toward flame
