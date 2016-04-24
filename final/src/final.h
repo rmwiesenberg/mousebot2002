@@ -61,8 +61,9 @@ PID pid(&pidInput, &pidOutput, &pidSetpoint, Kp, Ki, Kd, DIRECT);
 #define ENCODER2_PIN 3
 #define FLAME_PIN A10
 #define PHOTO_PIN A11
+#define FAN_PIN 30
 
-turret extinguisher(TURRET_MOTOR_PIN, TURRET_SERVO_PIN, FLAME_PIN, PHOTO_PIN);
+turret extinguisher(TURRET_MOTOR_PIN, TURRET_SERVO_PIN, FLAME_PIN, PHOTO_PIN, FAN_PIN);
 
 // LCD Declaration
 LiquidCrystal lcd(40, 41, 42, 43, 44, 45);
