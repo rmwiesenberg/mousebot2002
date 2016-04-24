@@ -6,12 +6,14 @@
 
 class turret {
   public:
-    turret(int pinMotor, int pinServo);
+    turret(int pinMotor, int pinServo, int pinFlame, int pinPhoto);
     void turretSetup();
-    void sweep();
+    void zero();
+    void sweep(int low, int high);
+    void stop();
 
   private:
-    int _pM, _pS;
+    int _pM, _pS, _pF, _pP;
 };
 
 #endif

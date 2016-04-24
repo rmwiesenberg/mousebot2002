@@ -56,11 +56,13 @@ const double pidError = .25;
 // PID Declarations
 PID pid(&pidInput, &pidOutput, &pidSetpoint, Kp, Ki, Kd, DIRECT);
 
-// EncoderTurret
+// Turret
 #define ENCODER1_PIN 2
 #define ENCODER2_PIN 3
+#define FLAME_PIN A10
+#define PHOTO_PIN A11
 
-turret extinguisher(TURRET_MOTOR_PIN, TURRET_SERVO_PIN);
+turret extinguisher(TURRET_MOTOR_PIN, TURRET_SERVO_PIN, FLAME_PIN, PHOTO_PIN);
 
 // LCD Declaration
 LiquidCrystal lcd(40, 41, 42, 43, 44, 45);
