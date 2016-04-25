@@ -13,6 +13,8 @@ class turret {
     void stop();
     void home();
     boolean foundFlame();
+    int getPosFlame();
+    boolean extinguish();
 
   private:
     int _pM, _pS, _pFS, _pP, _pF;
