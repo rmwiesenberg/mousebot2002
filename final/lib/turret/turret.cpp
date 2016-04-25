@@ -1,13 +1,15 @@
 #include "turret.h"
-#define TURRET_SPEED 79
+#define TURRET_SPEED 78
 #define TURRET_HOME 0
 #define SERVO_HOME 100
 #define FOUND_FLAME 500
+#define NO_FIRE 1000
 
 Servo tM, tS;
 Encoder enc(2, 3);
 int tSpeed = TURRET_SPEED;
 boolean zeroed = false;
+int posFlame = -900;
 
 turret::turret(int pinMotor, int pinServo, int pinFlameSensor, int pinPhoto, int pinFan){
   _pM = pinMotor;
@@ -37,19 +39,18 @@ void turret::zero(){
 }
 
 void turret::sweep(int low, int high){
-  tM.write(tSpeed);
-  if(enc.read() < low || enc.read() > high){
+  if(enc.read() <= low || enc.read() >= high){
     if (enc.read() < TURRET_HOME) tSpeed = 180 - TURRET_SPEED;
     if (enc.read() > TURRET_HOME) tSpeed = TURRET_SPEED;
   }
-  Serial.println(enc.read());
+  tM.write(tSpeed);
 }
 
 void turret::stop(){
   tM.write(90);
 }
 
-void turret::home(){
+boolean turret::home(){
   if (enc.read() < TURRET_HOME){
     tSpeed = 180 - TURRET_SPEED;
     tM.write(tSpeed);
@@ -58,11 +59,43 @@ void turret::home(){
     tSpeed = TURRET_SPEED;
     tM.write(tSpeed);
   }
-  if (enc.read() == TURRET_HOME) stop();
+  if (enc.read() == TURRET_HOME) {
+    stop();
+    return true;
+  } else return false;
+}
+
+boolean turret::go(int deg){
+  if (enc.read() < deg){
+    tSpeed = 180 - TURRET_SPEED;
+    tM.write(tSpeed);
+  }
+  if (enc.read() > deg){
+    tSpeed = TURRET_SPEED;
+    tM.write(tSpeed);
+  }
+  if (enc.read() == deg) {
+    stop();
+    return true;
+  } else return false;
 }
 
 boolean turret::foundFlame(){
-  Serial.println(analogRead(_pFS));
-  if(analogRead(_pFS) < FOUND_FLAME) return true;
+  if(analogRead(_pFS) < FOUND_FLAME) {
+    posFlame = enc.read();
+    stop();
+    return true;
+  }
   else return false;
+}
+
+int turret::getPosFlame(){
+  return posFlame;
+}
+
+boolean turret::extinguish(){
+  if(analogRead(_pFS) < NO_FIRE){
+    digitalWrite(_pF, HIGH);
+    return false;
+  } else return true;
 }

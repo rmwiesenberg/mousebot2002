@@ -42,15 +42,17 @@ double rightDist, midDist, leftDist;
 
 // PID BASE THINGS
 #define TARGET_DIST 8
-#define MIN_FRONT_DIST 8
+#define MIN_FRONT_DIST 10
 #define MAX_DIST 30
 #define SAMPLE_TIME 10
-#define MIN_SPEED 30
-#define REG_SPEED 30
+#define MIN_SPEED 20
+#define MAX_PID_SPEED 50
+#define REG_SPEED 25
+#define TURN_SPEED 20
 
 // Variables for PID
 double pidInput, pidOutput, pidSetpoint;
-const double Kp = 400, Ki = 0, Kd = 0;
+const double Kp = 40, Ki = 10, Kd = 10;
 const double pidError = .25;
 
 // PID Declarations
@@ -65,6 +67,24 @@ PID pid(&pidInput, &pidOutput, &pidSetpoint, Kp, Ki, Kd, DIRECT);
 
 turret extinguisher(TURRET_MOTOR_PIN, TURRET_SERVO_PIN, FLAME_PIN, PHOTO_PIN, FAN_PIN);
 
+// Mice
+#define LEFT_MOUSE_CLOCK 30
+#define LEFT_MOUSE_DATA 28
+#define RIGHT_MOUSE_CLOCK 31
+#define RIGHT_MOUSE_DATA 29
+#define POSITION_ERROR 4
+const double turnConst = 2;
+const double driveCont = 2;
+
+PS2 leftMouse(LEFT_MOUSE_CLOCK, LEFT_MOUSE_DATA);
+PS2 rightMouse(RIGHT_MOUSE_CLOCK, RIGHT_MOUSE_DATA);
+
+char lstat, lx, ly, rstat, rx, ry;
+
+unsigned tdist;
+unsigned long tx, ty;
+float deg;
+
 // LCD Declaration
 LiquidCrystal lcd(40, 41, 42, 43, 44, 45);
 
@@ -75,6 +95,7 @@ LiquidCrystal lcd(40, 41, 42, 43, 44, 45);
 enum robotState{
   INIT,  // Initialization - Find Walls
   FIND_FLAME, // Wall Follow to FIND_FLAME
+  TURN_FLAME,
   TO_FLAME, // After Found Flame. Drive to it
   EXTINGUISH, // Put out Flame
   FIND_WALL, // Refind Wall
@@ -101,6 +122,8 @@ closeWall cWall = DEBUG;
 
 // Function Declarations
 void regDrive(int speed);
+void turnRight();
+void turnLeft();
 void pingWall(void);
 void lcdPrintWallDist(void);
 void findWall(void);
@@ -108,3 +131,6 @@ void wallSwitch(void);
 void wallFollow(void);
 void turnCorner(void);
 void turnEnd(void);
+void turnDeg(float degTurn);
+float getDeg(void);
+void fuMice();
