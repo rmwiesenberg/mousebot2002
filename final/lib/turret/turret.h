@@ -11,7 +11,8 @@ class turret {
     void zero();
     void sweep(int low, int high);
     void stop();
-    void home();
+    boolean home();
+    boolean go(int deg);
     boolean foundFlame();
     int getPosFlame();
     boolean extinguish();

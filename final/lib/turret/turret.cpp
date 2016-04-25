@@ -1,5 +1,5 @@
 #include "turret.h"
-#define TURRET_SPEED 79
+#define TURRET_SPEED 78
 #define TURRET_HOME 0
 #define SERVO_HOME 100
 #define FOUND_FLAME 500
@@ -39,19 +39,18 @@ void turret::zero(){
 }
 
 void turret::sweep(int low, int high){
-  tM.write(tSpeed);
-  if(enc.read() < low || enc.read() > high){
+  if(enc.read() <= low || enc.read() >= high){
     if (enc.read() < TURRET_HOME) tSpeed = 180 - TURRET_SPEED;
     if (enc.read() > TURRET_HOME) tSpeed = TURRET_SPEED;
   }
-  Serial.println(enc.read());
+  tM.write(tSpeed);
 }
 
 void turret::stop(){
   tM.write(90);
 }
 
-void turret::home(){
+boolean turret::home(){
   if (enc.read() < TURRET_HOME){
     tSpeed = 180 - TURRET_SPEED;
     tM.write(tSpeed);
@@ -60,7 +59,25 @@ void turret::home(){
     tSpeed = TURRET_SPEED;
     tM.write(tSpeed);
   }
-  if (enc.read() == TURRET_HOME) stop();
+  if (enc.read() == TURRET_HOME) {
+    stop();
+    return true;
+  } else return false;
+}
+
+boolean turret::go(int deg){
+  if (enc.read() < deg){
+    tSpeed = 180 - TURRET_SPEED;
+    tM.write(tSpeed);
+  }
+  if (enc.read() > deg){
+    tSpeed = TURRET_SPEED;
+    tM.write(tSpeed);
+  }
+  if (enc.read() == deg) {
+    stop();
+    return true;
+  } else return false;
 }
 
 boolean turret::foundFlame(){
