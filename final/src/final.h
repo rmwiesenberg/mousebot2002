@@ -42,7 +42,7 @@ double rightDist, midDist, leftDist;
 
 // PID BASE THINGS
 #define TARGET_DIST 8
-#define MIN_FRONT_DIST 12
+#define MIN_FRONT_DIST 10
 #define MAX_DIST 30
 #define SAMPLE_TIME 10
 #define MIN_SPEED 20
@@ -72,13 +72,16 @@ turret extinguisher(TURRET_MOTOR_PIN, TURRET_SERVO_PIN, FLAME_PIN, PHOTO_PIN, FA
 #define LEFT_MOUSE_DATA 28
 #define RIGHT_MOUSE_CLOCK 31
 #define RIGHT_MOUSE_DATA 29
-#define FULL_360 .475
+#define POSITION_ERROR 4
+const double turnConst = 2;
+const double driveCont = 2;
 
 PS2 leftMouse(LEFT_MOUSE_CLOCK, LEFT_MOUSE_DATA);
 PS2 rightMouse(RIGHT_MOUSE_CLOCK, RIGHT_MOUSE_DATA);
 
 char lstat, lx, ly, rstat, rx, ry;
 
+unsigned tdist;
 unsigned long tx, ty;
 float deg;
 

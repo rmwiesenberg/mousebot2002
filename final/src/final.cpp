@@ -55,27 +55,37 @@ void loop(void) {
     break;
 
     case TURN_FLAME:
-      regDrive(MOTOR_STOP);
-      digitalWrite(UNO_PIN1, HIGH);
-      turnDeg(extinguisher.getPosFlame());
-      rState = TO_FLAME;
+    regDrive(MOTOR_STOP);
+    digitalWrite(UNO_PIN1, HIGH);
+    // turnDeg(extinguisher.getPosFlame());
+    extinguisher.go(extinguisher.getPosFlame());
+    rState = TO_FLAME;
     break;
 
     case TO_FLAME: // moving toward flame
-      digitalWrite(UNO_PIN1, HIGH);
+    digitalWrite(UNO_PIN1, HIGH);
+    rState = EXTINGUISH;
     break;
 
     case EXTINGUISH: // extinguishing flame
-      if(extinguisher.extinguish()) rState = FIND_WALL;
+    digitalWrite(UNO_PIN1, HIGH);
+    if(extinguisher.extinguish()) {
+      rState = FIND_WALL;
+      digitalWrite(UNO_PIN1, LOW);
+    }
     break;
 
     case FIND_WALL: // re-find and drive to wall
-    pingWall();
+    turnDeg(180);
     rState = GO_HOME;
     break;
 
     case GO_HOME: // wall following home
     wallSwitch();
+    if(tx < POSITION_ERROR && tx > (0 - POSITION_ERROR)
+      && ty < POSITION_ERROR && ty > (0 - POSITION_ERROR)){
+
+    }
     break;
 
     case STOP: // made it home
@@ -116,10 +126,12 @@ void wallSwitch(){
     break;
 
     case CORNER: // turning 90 degrees at a corner
+    extinguisher.stop();
     turnCorner();
     break;
 
     case WALL_END: // turning around the end of a wall
+    extinguisher.stop();
     turnEnd();
     break;
   }
@@ -152,7 +164,7 @@ void lcdPrintWallDist(){
   // print closest wall
   lcd.setCursor(7,1);
   lcd.print(" W: ");
-   switch (cWall) { // print closest wall
+  switch (cWall) { // print closest wall
     case RIGHT:
     lcd.print("R");
     break;
@@ -210,7 +222,7 @@ void wallFollow(void){
     if (rightDist <= (TARGET_DIST + pidError) && rightDist >= (TARGET_DIST - pidError)){
       regDrive(MOTOR_STOP - REG_SPEED);
     } else {
-        if (rightDist < TARGET_DIST){ // is wall is closer
+      if (rightDist < TARGET_DIST){ // is wall is closer
         leftMotor.write(MOTOR_STOP + MIN_SPEED);
         rightMotor.write(MOTOR_STOP - MIN_SPEED - (int) pidOutput);
       } else if (rightDist > TARGET_DIST){ // if wall is further
@@ -274,40 +286,38 @@ void turnDeg(float degTurn){
   regDrive(MOTOR_STOP);
 }
 
-float getDeg(){
+void driveDist(float dist){
+  leftMouse.mouse_pos(lstat, lx, ly);
+  rightMouse.mouse_pos(rstat, rx, ly);
+
+  tdist = 0;
+
+  while(dist > tdist){
+    
+  }
+
   fuMice();
+}
+
+float getDeg(){
+  leftMouse.mouse_pos(lstat, lx, ly);
+  rightMouse.mouse_pos(rstat, rx, ly);
 
   double x1 = (double) lx;
   double x2 = (double) rx;
 
-  deg = deg + (abs((x1 + x2) / 2.0) / FULL_360);
-  lcd.setCursor(0,0);
-  lcd.print("Deg: ");
-  lcd.print(deg);
-
-  lcd.setCursor(0,1);
-  lcd.print("L: ");
-  lcd.print(x1);
-
-  // print closest wall
-  lcd.setCursor(7,1);
-  lcd.print(" R: ");
-  lcd.print(x2);
-
-
+  deg = deg + (((abs(x1) + abs(x2)) / 2.0) * turnConst);
+  fuMice();
   return deg;
 }
 
 void fuMice(){
-  leftMouse.mouse_init();
-  rightMouse.mouse_init();
-
   lstat = 0;
   lx = 0;
   ly = 0;
   rstat = 0;
   rx = 0;
   ry = 0;
-  leftMouse.mouse_pos(lstat, lx, ly);
-  rightMouse.mouse_pos(rstat, rx, ly);
+  leftMouse.mouse_init();
+  rightMouse.mouse_init();
 }
