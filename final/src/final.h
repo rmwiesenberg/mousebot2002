@@ -44,7 +44,7 @@ double rightDist, midDist, leftDist;
 #define TARGET_DIST 8
 #define MIN_FRONT_DIST 10
 #define MAX_DIST 30
-#define SAMPLE_TIME 10
+#define SAMPLE_TIME 5
 #define MIN_SPEED 20
 #define MAX_PID_SPEED 50
 #define REG_SPEED 25
@@ -85,6 +85,7 @@ unsigned int tdist;
 double tx, ty;
 double heading;
 float deg;
+unsigned long nextTime = 0;
 
 // LCD Declaration
 LiquidCrystal lcd(40, 41, 42, 43, 44, 45);

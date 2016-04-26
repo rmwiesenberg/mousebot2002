@@ -153,18 +153,18 @@ void pingWall(void){
 void lcdPrintWallDist(){
   // print left
   lcd.setCursor(0,0);
-  lcd.print("X: ");
-  lcd.print(tx);
+  lcd.print("L: ");
+  lcd.print(leftDist);
 
   // print right
   lcd.setCursor(7,0);
-  lcd.print(" Y: ");
-  lcd.print(ty);
+  lcd.print(" R: ");
+  lcd.print(rightDist);
 
   // print mid
   lcd.setCursor(0,1);
-  lcd.print("H: ");
-  lcd.print(heading);
+  lcd.print("M: ");
+  lcd.print(midDist);
 
   // print closest wall
   lcd.setCursor(7,1);
@@ -353,6 +353,9 @@ void fuMice(){
   rstat = 0;
   rx = 0;
   ry = 0;
-  leftMouse.mouse_init();
-  rightMouse.mouse_init();
+  if(millis() > nextTime){
+    leftMouse.mouse_init();
+    rightMouse.mouse_init();
+    nextTime = millis() + SAMPLE_TIME;
+  }
 }
