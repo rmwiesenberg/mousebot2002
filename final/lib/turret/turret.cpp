@@ -32,7 +32,7 @@ void turret::turretSetup(){
 //calculates the correct home position
 //for the turret using a photoresistor
 void turret::zero(){
-  while(analogRead(_pP) < 650 && !zeroed){
+  while(analogRead(_pP) < 700 && !zeroed){
     sweep(-90, 90);
   }
   zeroed = true;
@@ -110,4 +110,9 @@ boolean turret::extinguish(){
     digitalWrite(_pF, HIGH);
     return false;
   } else return true;
+}
+
+//getter for the current turret encoder position
+long turret::getTurretEncPos(){
+  return enc.read();
 }
