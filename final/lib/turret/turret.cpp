@@ -6,7 +6,7 @@
 #define NO_FIRE 1000
 
 Servo tM, tS;
-Encoder enc(2, 3);
+Encoder enc(2, 28);
 int tSpeed = TURRET_SPEED;
 boolean zeroed = false;
 int posFlame = -900;
@@ -32,8 +32,8 @@ void turret::turretSetup(){
 //calculates the correct home position
 //for the turret using a photoresistor
 void turret::zero(){
-  while(analogRead(_pP) < 800 && !zeroed){
-    sweep(-100, 100);
+  while(analogRead(_pP) < 650 && !zeroed){
+    sweep(-90, 90);
   }
   zeroed = true;
   stop();

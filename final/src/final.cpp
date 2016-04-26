@@ -32,8 +32,8 @@ void setup() {
   extinguisher.turretSetup();
 
   // mouse setup
-  leftMouse.mouse_init();
-  rightMouse.mouse_init();
+  //leftMouse.mouse_init();
+  //rightMouse.mouse_init();
 }
 
 void loop(void) {
@@ -43,6 +43,7 @@ void loop(void) {
     pingWall();
     findWall();
     extinguisher.zero();
+    lcdPrintWallDist();
     rState = FIND_FLAME;
     wState = FOLLOW;
     break;
@@ -110,12 +111,16 @@ void regDrive(int speed){
 void turnRight(){
   leftMotor.write(MOTOR_STOP + TURN_SPEED);
   rightMotor.write(MOTOR_STOP + TURN_SPEED);
+  delay(10);
+  regDrive(MOTOR_STOP);
 }
 
 // called if robot needs to turn left
 void turnLeft(){
   leftMotor.write(MOTOR_STOP - TURN_SPEED);
   rightMotor.write(MOTOR_STOP - TURN_SPEED);
+  delay(10);
+  regDrive(MOTOR_STOP);
 }
 
 // Switch between wall following states
@@ -153,18 +158,18 @@ void pingWall(void){
 void lcdPrintWallDist(){
   // print left
   lcd.setCursor(0,0);
-  lcd.print("X: ");
-  lcd.print(tx);
+  lcd.print("L: ");
+  lcd.print(leftDist);
 
   // print right
   lcd.setCursor(7,0);
-  lcd.print(" Y: ");
-  lcd.print(ty);
+  lcd.print(" R: ");
+  lcd.print(rightDist);
 
   // print mid
   lcd.setCursor(0,1);
-  lcd.print("H: ");
-  lcd.print(heading);
+  lcd.print("M: ");
+  lcd.print(midDist);
 
   // print closest wall
   lcd.setCursor(7,1);
@@ -252,11 +257,11 @@ void wallFollow(void){
 void turnCorner(){
   switch (cWall) {//turns the robot right or left
     case LEFT:
-    if(turnDeg(-90)) wState = FOLLOW;
+    if(turnDeg(-80)) wState = FOLLOW;
     break;
 
     case RIGHT:
-    if(turnDeg(90)) wState = FOLLOW;
+    if(turnDeg(80)) wState = FOLLOW;
     break;
 
     case DEBUG:
@@ -279,15 +284,20 @@ void turnEnd(){
 boolean turnDeg(float degTurn){
   switch (turning) {
     case START:
+      regDrive(MOTOR_STOP);
       deg = heading + degTurn;
       turning = MOVING;
       return false;
     break;
 
     case MOVING:
-      if(degTurn < 0 && deg < heading) turnRight();
-      else if (degTurn > 0 && deg > heading) turnLeft();
-      else{
+      if(degTurn < 0 && deg <= heading) {
+        updatePos();
+        turnRight();
+      } else if (degTurn > 0 && deg >= heading) {
+        updatePos();
+        turnLeft();
+      } else {
         turning = END;
         regDrive(MOTOR_STOP);
       }
