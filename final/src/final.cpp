@@ -8,6 +8,10 @@
 #include "final.h" // constants or other includes in other file for neatness
 
 void setup() {
+  // Uno setup
+  pinMode(UNO_PIN1, OUTPUT);
+  digitalWrite(UNO_PIN1, LOW);
+
   // Serial port for debugging
   Serial.begin(9600);
 
@@ -17,43 +21,71 @@ void setup() {
   // Attach Motors
   rightMotor.attach(RIGHT_MOTOR_PIN, 1000, 2000);
   leftMotor.attach(LEFT_MOTOR_PIN, 1000, 2000);
-  turretMotor.attach(TURRET_MOTOR_PIN, 1000, 2000);
-  turretServo.attach(TURRET_SERVO_PIN);
 
   // PID setup
   pidSetpoint = TARGET_DIST; // sets dist from wall
-  pid.SetOutputLimits(MOTOR_MAX_REV, (MOTOR_STOP - MIN_SPEED)); // sets limits for PID (essentially -60 to 60)
+  pid.SetOutputLimits(MOTOR_MAX_REV, (MAX_PID_SPEED - MIN_SPEED)); // sets limits for PID (essentially -60 to 60)
   pid.SetSampleTime(SAMPLE_TIME);
   pid.SetMode(AUTOMATIC); // turns PID on
+
+  // turret setup
+  extinguisher.turretSetup();
+
+  // mouse setup
+  leftMouse.mouse_init();
+  rightMouse.mouse_init();
 }
 
 void loop(void) {
   switch (rState) {
     case INIT: // wall distance initializations
-    // pingWall();
+    pingWall();
+    findWall();
+    extinguisher.zero();
     rState = FIND_FLAME;
     wState = FOLLOW;
     break;
 
     case FIND_FLAME: // wall following to find flame
     pingWall();
+    findWall();
     lcdPrintWallDist();
     wallSwitch();
+    if(extinguisher.foundFlame() == true) rState = TURN_FLAME;
+    break;
+
+    case TURN_FLAME:
+    regDrive(MOTOR_STOP);
+    digitalWrite(UNO_PIN1, HIGH);
+    // turnDeg(extinguisher.getPosFlame());
+    extinguisher.go(extinguisher.getPosFlame());
+    rState = TO_FLAME;
     break;
 
     case TO_FLAME: // moving toward flame
+    digitalWrite(UNO_PIN1, HIGH);
+    rState = EXTINGUISH;
     break;
 
     case EXTINGUISH: // extinguishing flame
+    digitalWrite(UNO_PIN1, HIGH);
+    if(extinguisher.extinguish()) {
+      rState = FIND_WALL;
+      digitalWrite(UNO_PIN1, LOW);
+    }
     break;
 
     case FIND_WALL: // re-find and drive to wall
-    pingWall();
+    turnDeg(180);
     rState = GO_HOME;
     break;
 
     case GO_HOME: // wall following home
     wallSwitch();
+    if(tx < POSITION_ERROR && tx > (0 - POSITION_ERROR)
+      && ty < POSITION_ERROR && ty > (0 - POSITION_ERROR)){
+
+    }
     break;
 
     case STOP: // made it home
@@ -69,16 +101,38 @@ void regDrive(int speed){
   rightMotor.write(speed);
 }
 
+// called if robot needs to turn right
+void turnRight(){
+  leftMotor.write(MOTOR_STOP + TURN_SPEED);
+  rightMotor.write(MOTOR_STOP + TURN_SPEED);
+}
+
+// called if robot needs to turn left
+void turnLeft(){
+  leftMotor.write(MOTOR_STOP - TURN_SPEED);
+  rightMotor.write(MOTOR_STOP - TURN_SPEED);
+}
 
 // Switch between wall following states
 void wallSwitch(){
   switch (wState) {
     case FOLLOW: // following wall
-    wallFollow(closeWall());
+    wallFollow();
+
+    if(midDist < MIN_FRONT_DIST) wState = CORNER;
+    // if(cWall == LEFT && leftDist > MAX_DIST) wState = WALL_END;
+    // if(cWall == RIGHT && rightDist > MAX_DIST) wState = WALL_END;
+
     break;
+
     case CORNER: // turning 90 degrees at a corner
+    extinguisher.stop();
+    turnCorner();
     break;
+
     case WALL_END: // turning around the end of a wall
+    extinguisher.stop();
+    turnEnd();
     break;
   }
 }
@@ -110,66 +164,160 @@ void lcdPrintWallDist(){
   // print closest wall
   lcd.setCursor(7,1);
   lcd.print(" W: ");
-  if (closeWall() == RIGHT){
+  switch (cWall) { // print closest wall
+    case RIGHT:
     lcd.print("R");
-  } else if (closeWall() == LEFT){
+    break;
+    case LEFT:
     lcd.print("L");
-  } else if (closeWall() == ZERO){
+    break;
+    case ZERO:
     lcd.print("Z");
-  } else {
-    lcd.print("E");
+    break;
+    case DEBUG:
+    lcd.print("D");
+    break;
   }
 }
 
 // determines closest wall - left or right
 // used for figuring out which wall to follow
-// 'R' - right wall; 'L' - left wall; 'x' - debugging
-cWall closeWall(){
-  cWall result;
-
-  if ((rightDist > 0) && (rightDist < leftDist)) result = RIGHT;
-  else if ((leftDist > 0) && (leftDist < rightDist)) result = LEFT;
-  else if ((rightDist == 0) && (leftDist == 0)) result = ZERO;
-
-  return result;
+// RIGHT - right wall; LEFT - left wall; ZERO - if it can't see any wall
+void findWall(void){
+  if ((rightDist > 0) && (rightDist < leftDist)) cWall = RIGHT;
+  else if ((leftDist > 0) && (leftDist < rightDist)) cWall = LEFT;
+  else if ((rightDist == 0) && (leftDist == 0)) cWall = ZERO;
 }
 
 // uses PID to follow wall
-void wallFollow(cWall wall){
+void wallFollow(void){
   // case for left wall being closer to robot
-  if (wall == LEFT){
+  switch (cWall) {
+    case LEFT:
+    extinguisher.sweep(-100, 0);
     pidInput = leftDist;
     pid.Compute(); // pid detects if it needs to run again
 
     // determine if dist is out of range of error
     if (leftDist <= (TARGET_DIST + pidError) && leftDist >= (TARGET_DIST - pidError)){
-      regDrive(MOTOR_MAX_FRW);
+      regDrive(MOTOR_STOP - REG_SPEED);
     } else {
       if (leftDist < TARGET_DIST){ // is wall is closer
-        leftMotor.write(MOTOR_STOP - MIN_SPEED - (int) pidOutput);
-        rightMotor.write(MOTOR_STOP + MIN_SPEED);
+        leftMotor.write(MOTOR_STOP + MIN_SPEED + (int) pidOutput);
+        rightMotor.write(MOTOR_STOP - MIN_SPEED);
       } else if (leftDist > TARGET_DIST){ // if wall is further
-        leftMotor.write(MOTOR_STOP - MIN_SPEED);
-        rightMotor.write(MOTOR_STOP + MIN_SPEED + (int) pidOutput);
+        leftMotor.write(MOTOR_STOP + MIN_SPEED);
+        rightMotor.write(MOTOR_STOP - MIN_SPEED - (int) pidOutput);
       }
     }
+    break;
 
     // case for right wall being closer to robot
-  } else if (wall == RIGHT){
+    case RIGHT:
+    extinguisher.sweep(0, 100);
     pidInput = rightDist;
     pid.Compute(); // pid detects if it needs to run again
 
     // determine if dist is out of range of error
     if (rightDist <= (TARGET_DIST + pidError) && rightDist >= (TARGET_DIST - pidError)){
-      regDrive(MOTOR_MAX_FRW);
+      regDrive(MOTOR_STOP - REG_SPEED);
     } else {
-        if (rightDist < TARGET_DIST){ // is wall is closer
-        leftMotor.write(MOTOR_STOP - MIN_SPEED);
-        rightMotor.write(MOTOR_STOP + MIN_SPEED + (int) pidOutput);
+      if (rightDist < TARGET_DIST){ // is wall is closer
+        leftMotor.write(MOTOR_STOP + MIN_SPEED);
+        rightMotor.write(MOTOR_STOP - MIN_SPEED - (int) pidOutput);
       } else if (rightDist > TARGET_DIST){ // if wall is further
-        leftMotor.write(MOTOR_STOP - MIN_SPEED - (int) pidOutput);
-        rightMotor.write(MOTOR_STOP + MIN_SPEED);
+        leftMotor.write(MOTOR_STOP + MIN_SPEED + (int) pidOutput);
+        rightMotor.write(MOTOR_STOP - MIN_SPEED);
       }
     }
+    break;
+
+    // case if no walls are seen
+    case ZERO:
+    regDrive(MOTOR_STOP);
+    break;
+
+    case DEBUG:
+    regDrive(MOTOR_STOP);
+    break;
   }
+}
+
+void turnCorner(){
+  switch (cWall) {
+    case LEFT:
+    turnDeg(-90);
+    wState = FOLLOW;
+    break;
+
+    case RIGHT:
+    turnDeg(90);
+    wState = FOLLOW;
+    break;
+
+    case DEBUG:
+    regDrive(MOTOR_STOP);
+    break;
+
+    case ZERO:
+    regDrive(MOTOR_STOP);
+    break;
+  }
+}
+
+void turnEnd(){
+
+}
+
+void turnDeg(float degTurn){
+  if(degTurn < 0){
+    deg = 0;
+    Serial.println(deg);
+    while(abs(degTurn) > getDeg()){
+      turnRight();
+    }
+  } else if(degTurn > 0){
+    deg = 0;
+    Serial.println(deg);
+    while(abs(degTurn) > getDeg()){
+      turnLeft();
+    }
+  }
+  regDrive(MOTOR_STOP);
+}
+
+void driveDist(float dist){
+  leftMouse.mouse_pos(lstat, lx, ly);
+  rightMouse.mouse_pos(rstat, rx, ly);
+
+  tdist = 0;
+
+  while(dist > tdist){
+    
+  }
+
+  fuMice();
+}
+
+float getDeg(){
+  leftMouse.mouse_pos(lstat, lx, ly);
+  rightMouse.mouse_pos(rstat, rx, ly);
+
+  double x1 = (double) lx;
+  double x2 = (double) rx;
+
+  deg = deg + (((abs(x1) + abs(x2)) / 2.0) * turnConst);
+  fuMice();
+  return deg;
+}
+
+void fuMice(){
+  lstat = 0;
+  lx = 0;
+  ly = 0;
+  rstat = 0;
+  rx = 0;
+  ry = 0;
+  leftMouse.mouse_init();
+  rightMouse.mouse_init();
 }

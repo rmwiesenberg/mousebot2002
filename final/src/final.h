@@ -1,9 +1,12 @@
 #include <Arduino.h>
 #include <Servo.h>
 #include <LiquidCrystal.h>
-#include "NewPing.cpp"
-#include "ps2.cpp"
-#include "PID_v1.cpp"
+#include "NewPing.h"
+#include "ps2.h"
+#include "PID_v1.h"
+#include "LSM303.h"
+#include <Wire.h>
+#include "turret.h"
 
 // Start Definitions
 // Pin Definitions
@@ -13,7 +16,7 @@
 #define TURRET_SERVO_PIN 7
 
 // Motor Declarations
-Servo rightMotor, leftMotor, turretMotor, turretServo;
+Servo rightMotor, leftMotor;
 int rightSpeed, leftSpeed;
 
 // Motor Speed Definitions
@@ -22,12 +25,12 @@ int rightSpeed, leftSpeed;
 #define MOTOR_MAX_REV 0
 
 // Ultrasonic Range Finder Pins
-#define RIGHT_URF_TRIG 24
-#define MID_URF_TRIG 23
-#define LEFT_URF_TRIG 22
-#define RIGHT_URF_ECHO 20
-#define MID_URF_ECHO 19
-#define LEFT_URF_ECHO 2
+#define RIGHT_URF_TRIG 27
+#define MID_URF_TRIG 25
+#define LEFT_URF_TRIG 23
+#define RIGHT_URF_ECHO 26
+#define MID_URF_ECHO 24
+#define LEFT_URF_ECHO 22
 
 // URF Declarations
 NewPing rightURF(RIGHT_URF_TRIG, RIGHT_URF_ECHO);
@@ -39,24 +42,60 @@ double rightDist, midDist, leftDist;
 
 // PID BASE THINGS
 #define TARGET_DIST 8
+#define MIN_FRONT_DIST 10
+#define MAX_DIST 30
 #define SAMPLE_TIME 10
-#define MIN_SPEED 30
+#define MIN_SPEED 20
+#define MAX_PID_SPEED 50
+#define REG_SPEED 25
+#define TURN_SPEED 20
 
 // Variables for PID
 double pidInput, pidOutput, pidSetpoint;
-const double Kp = 2, Ki = 1, Kd = 1;
-const double pidError = 1;
+const double Kp = 40, Ki = 10, Kd = 10;
+const double pidError = .25;
 
 // PID Declarations
 PID pid(&pidInput, &pidOutput, &pidSetpoint, Kp, Ki, Kd, DIRECT);
 
+// Turret
+#define ENCODER1_PIN 2
+#define ENCODER2_PIN 3
+#define FLAME_PIN A10
+#define PHOTO_PIN A11
+#define FAN_PIN 30
+
+turret extinguisher(TURRET_MOTOR_PIN, TURRET_SERVO_PIN, FLAME_PIN, PHOTO_PIN, FAN_PIN);
+
+// Mice
+#define LEFT_MOUSE_CLOCK 30
+#define LEFT_MOUSE_DATA 28
+#define RIGHT_MOUSE_CLOCK 31
+#define RIGHT_MOUSE_DATA 29
+#define POSITION_ERROR 4
+const double turnConst = 2;
+const double driveCont = 2;
+
+PS2 leftMouse(LEFT_MOUSE_CLOCK, LEFT_MOUSE_DATA);
+PS2 rightMouse(RIGHT_MOUSE_CLOCK, RIGHT_MOUSE_DATA);
+
+char lstat, lx, ly, rstat, rx, ry;
+
+unsigned tdist;
+unsigned long tx, ty;
+float deg;
+
 // LCD Declaration
 LiquidCrystal lcd(40, 41, 42, 43, 44, 45);
+
+// UNO Stuff
+#define UNO_PIN1 33
 
 // States for General Robot Running
 enum robotState{
   INIT,  // Initialization - Find Walls
   FIND_FLAME, // Wall Follow to FIND_FLAME
+  TURN_FLAME,
   TO_FLAME, // After Found Flame. Drive to it
   EXTINGUISH, // Put out Flame
   FIND_WALL, // Refind Wall
@@ -70,7 +109,7 @@ enum wallState{
   WALL_END // Turn around wall end
 };
 
-enum cWall{
+enum closeWall{
   DEBUG,
   RIGHT,
   LEFT,
@@ -79,11 +118,19 @@ enum cWall{
 
 robotState rState = INIT; //start global state as INIT
 wallState wState; // Delcare variable for wall following state
+closeWall cWall = DEBUG;
 
 // Function Declarations
 void regDrive(int speed);
+void turnRight();
+void turnLeft();
 void pingWall(void);
 void lcdPrintWallDist(void);
-cWall closeWall(void);
+void findWall(void);
 void wallSwitch(void);
-void wallFollow(cWall wall);
+void wallFollow(void);
+void turnCorner(void);
+void turnEnd(void);
+void turnDeg(float degTurn);
+float getDeg(void);
+void fuMice();

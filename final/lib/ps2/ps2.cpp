@@ -8,6 +8,7 @@ PS2::PS2(int clk, int data){
   gohi(_ps2data);
 }
 
+// 420 blaze it
 void PS2::gohi(int pin){
   pinMode(pin, INPUT);
   digitalWrite(pin, HIGH);
