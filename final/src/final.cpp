@@ -32,17 +32,18 @@ void setup() {
   extinguisher.turretSetup();
 
   // mouse setup
-  leftMouse.mouse_init();
-  rightMouse.mouse_init();
+  //leftMouse.mouse_init();
+  //rightMouse.mouse_init();
 }
 
 void loop(void) {
-
+ updatePos();
   switch (rState) {
     case INIT: // wall distance initializations
     pingWall();
     findWall();
     extinguisher.zero();
+    lcdPrintEncVals();
     rState = FIND_FLAME;
     wState = FOLLOW;
     break;
@@ -50,9 +51,8 @@ void loop(void) {
     case FIND_FLAME: // wall following to find flame
     pingWall();
     findWall();
-    lcdPrintWallDist();
+    lcdPrintEncVals();
     wallSwitch();
-    updatePos();
     if(extinguisher.foundFlame() == true) rState = TURN_FLAME;
     break;
 
@@ -86,7 +86,6 @@ void loop(void) {
     pingWall();
     findWall();
     wallSwitch();
-    updatePos();
     if((tx < POSITION_ERROR) && (tx > (-POSITION_ERROR))
       && (ty < POSITION_ERROR) && (ty > (-POSITION_ERROR))){
         rState = STOP;
@@ -147,6 +146,65 @@ void pingWall(void){
   rightDist = rightURF.ping_in();
   midDist = midURF.ping_in();
   leftDist = leftURF.ping_in();
+}
+
+//prints the important distance information and closest wall
+void lcdPrintTravelDist(){
+  // print heading
+  lcd.setCursor(0,0);
+  lcd.print("H: ");
+  lcd.print(heading);
+
+  // print right
+  lcd.setCursor(7,0);
+  lcd.print(" X: ");
+  lcd.print(tx);
+
+  // print mid
+  lcd.setCursor(0,1);
+  lcd.print("Y: ");
+  lcd.print(ty);
+
+  // print closest wall
+  lcd.setCursor(7,1);
+  lcd.print(" W: ");
+  switch (cWall) { // print closest wall
+    case RIGHT:
+    lcd.print("R");
+    break;
+    case LEFT:
+    lcd.print("L");
+    break;
+    case ZERO:
+    lcd.print("Z");
+    break;
+    case DEBUG:
+    lcd.print("D");
+    break;
+  }
+}
+
+// print encoder values to the LCD
+void lcdPrintEncVals(){
+  // print turret enc
+  lcd.setCursor(0,0);
+  lcd.print("T: ");
+  lcd.print(extinguisher.getTurretEncPos());
+
+  // print left drive enc
+  lcd.setCursor(7,0);
+  lcd.print(" L: ");
+  lcd.print(ldenc.read());
+
+  // print right drive enc
+  lcd.setCursor(0,1);
+  lcd.print("R: ");
+  lcd.print(rdenc.read());
+
+  //print heading
+  lcd.setCursor(7,1);
+  lcd.print("H: ");
+  lcd.print(heading);
 }
 
 // print wall distances to the LCD
@@ -252,10 +310,12 @@ void wallFollow(void){
 void turnCorner(){
   switch (cWall) {//turns the robot right or left
     case LEFT:
+    regDrive(MOTOR_STOP);
     if(turnDeg(-90)) wState = FOLLOW;
     break;
 
     case RIGHT:
+    regDrive(MOTOR_STOP);
     if(turnDeg(90)) wState = FOLLOW;
     break;
 
@@ -272,6 +332,58 @@ void turnCorner(){
 //turns the robot around the end of a wall
 void turnEnd(){
 
+  regDrive(MOTOR_STOP);
+
+  driveDist(3);
+
+switch(cWall){//turns the robot right or left
+  case LEFT:
+  if(turnDeg(-90)) {
+    break;
+  }
+  break;
+
+  case RIGHT:
+  if(turnDeg(90)) {
+    break;
+  }
+  break;
+
+  case DEBUG:
+  regDrive(MOTOR_STOP);
+  break;
+
+  case ZERO:
+  regDrive(MOTOR_STOP);
+  break;
+}
+
+driveDist(7);
+
+switch(cWall){//turns the robot right or left
+  case LEFT:
+  if(turnDeg(-90)){
+    break;
+  }
+  break;
+
+  case RIGHT:
+  if(turnDeg(90)){
+    break;
+  }
+  break;
+
+  case DEBUG:
+  regDrive(MOTOR_STOP);
+  break;
+
+  case ZERO:
+  regDrive(MOTOR_STOP);
+  break;
+}
+
+driveDist(5);
+
 }
 
 //turns the robot the given number of degrees
@@ -279,15 +391,20 @@ void turnEnd(){
 boolean turnDeg(float degTurn){
   switch (turning) {
     case START:
+      regDrive(MOTOR_STOP);
       deg = heading + degTurn;
       turning = MOVING;
       return false;
     break;
 
     case MOVING:
-      if(degTurn < 0 && deg < heading) turnRight();
-      else if (degTurn > 0 && deg > heading) turnLeft();
-      else{
+      if(degTurn < 0 && deg <= heading) {
+        updatePos();
+        turnRight();
+      } else if (degTurn > 0 && deg >= heading) {
+        updatePos();
+        turnLeft();
+      } else {
         turning = END;
         regDrive(MOTOR_STOP);
       }
@@ -303,21 +420,20 @@ boolean turnDeg(float degTurn){
 
 //drives straight for the given distance
 void driveDist(double dist){
-  distDriven();
+  long initrEncVal = rdenc.read();
+  long initlEncVal = ldenc.read();
 
-  tdist = 0;
+  double trdist = 0;
+  double tldist = 0;
 
-  while(dist > tdist){
+  while(dist > trdist && dist > tldist){
     regDrive(MOTOR_STOP + REG_SPEED);
-    rEncVal = rdenc.read();
-    lEncVal = ldenc.read();
-    trDist = (rEncVal-oldrEncVal) * (WHEEL_CIRCUM / R_ENC_MAX);
-    tlDist = (lEncVal-oldlEncVal) * (WHEEL_CIRCUM / L_ENC_MAX);
-    tdist = tdist + ((trDist + tlDist) / 2);
-    updatePos();
+    trdist = (rdenc.read() - initrEncVal) * (WHEEL_CIRCUM / R_ENC_MAX);
+    tldist = (ldenc.read() - initlEncVal) * (WHEEL_CIRCUM / L_ENC_MAX);
   }
 
   regDrive(MOTOR_STOP);
+  updatePos();
 
 }
 //
@@ -351,7 +467,7 @@ void distDriven(){
 void updatePos(){
   distDriven();
 
-  heading = heading - ((lDist / WHEEL_DIST * 3.14 / 180) - (rDist / WHEEL_DIST * 3.14 / 180));
+  heading = heading + ((rDist-lDist) * HEADING_CONST);
 
 <<<<<<< HEAD
   tx = tx + (((x1 + x2) / 2) * cos(heading));
