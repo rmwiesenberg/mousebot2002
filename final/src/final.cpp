@@ -37,7 +37,7 @@ void setup() {
 }
 
 void loop(void) {
-  fuMice();
+
   switch (rState) {
     case INIT: // wall distance initializations
     pingWall();
@@ -302,17 +302,23 @@ boolean turnDeg(float degTurn){
 }
 
 //drives straight for the given distance
-void driveDist(float dist){
-  leftMouse.mouse_pos(lstat, lx, ly);
-  rightMouse.mouse_pos(rstat, rx, ly);
+void driveDist(double dist){
+  distDriven();
 
   tdist = 0;
 
   while(dist > tdist){
-
+    regDrive(MOTOR_STOP + REG_SPEED);
+    rEncVal = rdenc.read();
+    lEncVal = ldenc.read();
+    trDist = (rEncVal-oldrEncVal) * (WHEEL_CIRCUM / R_ENC_MAX);
+    tlDist = (lEncVal-oldlEncVal) * (WHEEL_CIRCUM / L_ENC_MAX);
+    tdist = tdist + ((trDist + tlDist) / 2);
+    updatePos();
   }
 
-  fuMice();
+  regDrive(MOTOR_STOP);
+
 }
 //
 // float getDeg(){
@@ -327,18 +333,27 @@ void driveDist(float dist){
 //   return deg;
 // }
 
+//calculated the distance driven by the wheels
+void distDriven(){
+  rEncVal = rdenc.read();
+  lEncVal = ldenc.read();
+
+  rDist = (rEncVal-oldrEncVal) * (WHEEL_CIRCUM / R_ENC_MAX);
+  lDist = (lEncVal-oldlEncVal) * (WHEEL_CIRCUM / L_ENC_MAX);
+
+  oldrEncVal = rEncVal;
+  oldlEncVal = lEncVal;
+}
+
 //updates the calculated position
 //of the robot with the position data from
 //the last loop
 void updatePos(){
-  leftMouse.mouse_pos(lstat, lx, ly);
-  rightMouse.mouse_pos(rstat, rx, ly);
+  distDriven();
 
-  double x1 = (double) lx;
-  double x2 = (double) rx;
+  heading = heading - ((lDist / WHEEL_DIST * 3.14 / 180) - (rDist / WHEEL_DIST * 3.14 / 180));
 
-  heading = heading + (((x1 - x2) / 2.0) * turnConst);
-
+<<<<<<< HEAD
   tx = tx + (((x1 + x2) / 2) * cos(heading));
   ty = ty + (((x1 + x2) / 2) * sin(heading));
 
@@ -358,4 +373,8 @@ void fuMice(){
     rightMouse.mouse_init();
     nextTime = millis() + SAMPLE_TIME;
   }
+=======
+  tx = tx + (((rDist + lDist) / 2) * cos(heading));
+  ty = ty + (((rDist + lDist) / 2) * sin(heading));
+>>>>>>> refs/remotes/origin/master
 }
