@@ -88,15 +88,15 @@ double heading;
 float deg;
 
 //Drive Encoders
-#define L_ENCODER1_PIN 3
-#define L_ENCODER2_PIN 18
+#define L_ENCODER1_PIN 18
+#define L_ENCODER2_PIN 3
 #define R_ENCODER1_PIN 20
 #define R_ENCODER2_PIN 19
 #define WHEEL_CIRCUM 11
 #define WHEEL_DIST 9
 #define R_ENC_MAX 360
 #define L_ENC_MAX 360
-
+#define HEADING_CONST 1
 
 Encoder rdenc(R_ENCODER1_PIN,R_ENCODER2_PIN);
 Encoder ldenc(L_ENCODER1_PIN,L_ENCODER2_PIN);
@@ -155,6 +155,7 @@ void turnLeft();
 void pingWall(void);
 void lcdPrintWallDist(void);
 void lcdPrintTravelDist(void);
+void lcdPrintEncVals(void);
 void findWall(void);
 void wallSwitch(void);
 void wallFollow(void);
