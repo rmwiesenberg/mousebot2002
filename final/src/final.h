@@ -81,8 +81,9 @@ PS2 rightMouse(RIGHT_MOUSE_CLOCK, RIGHT_MOUSE_DATA);
 
 char lstat, lx, ly, rstat, rx, ry;
 
-unsigned tdist;
-unsigned long tx, ty;
+unsigned int tdist;
+double tx, ty;
+double heading;
 float deg;
 
 // LCD Declaration
@@ -116,6 +117,14 @@ enum closeWall{
   ZERO
 };
 
+enum motion{
+  START,
+  MOVING,
+  END
+};
+
+motion turning = START;
+motion driving = START;
 robotState rState = INIT; //start global state as INIT
 wallState wState; // Delcare variable for wall following state
 closeWall cWall = DEBUG;
@@ -131,6 +140,7 @@ void wallSwitch(void);
 void wallFollow(void);
 void turnCorner(void);
 void turnEnd(void);
-void turnDeg(float degTurn);
+boolean turnDeg(float degTurn);
 float getDeg(void);
+void updatePos();
 void fuMice();
