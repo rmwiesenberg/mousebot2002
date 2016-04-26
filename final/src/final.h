@@ -81,10 +81,29 @@ PS2 rightMouse(RIGHT_MOUSE_CLOCK, RIGHT_MOUSE_DATA);
 
 char lstat, lx, ly, rstat, rx, ry;
 
-unsigned int tdist;
+double tdist;
+double trDist, tlDist;
 double tx, ty;
 double heading;
 float deg;
+
+//Drive Encoders
+#define ENCODER3_PIN 18
+#define ENCODER4_PIN 19
+#define ENCODER5_PIN 20
+#define ENCODER6_PIN 21
+#define WHEEL_CIRCUM 11
+#define WHEEL_DIST 9
+#define R_ENC_MAX 360
+#define L_ENC_MAX 360
+
+
+Encoder rdenc(ENCODER3_PIN,ENCODER4_PIN);
+Encoder ldenc(ENCODER3_PIN,ENCODER4_PIN);
+
+long rEncVal, lEncVal;
+long oldrEncVal, oldlEncVal;
+double rDist, lDist;
 
 // LCD Declaration
 LiquidCrystal lcd(40, 41, 42, 43, 44, 45);
@@ -142,5 +161,6 @@ void turnCorner(void);
 void turnEnd(void);
 boolean turnDeg(float degTurn);
 float getDeg(void);
-void updatePos();
-void fuMice();
+void driveDist(double dist);
+void updatePos(void);
+void distDriven(void);
