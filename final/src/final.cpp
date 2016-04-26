@@ -37,6 +37,7 @@ void setup() {
 }
 
 void loop(void) {
+  fuMice();
   switch (rState) {
     case INIT: // wall distance initializations
     pingWall();
@@ -51,6 +52,7 @@ void loop(void) {
     findWall();
     lcdPrintWallDist();
     wallSwitch();
+    updatePos();
     if(extinguisher.foundFlame() == true) rState = TURN_FLAME;
     break;
 
@@ -81,10 +83,13 @@ void loop(void) {
     break;
 
     case GO_HOME: // wall following home
+    pingWall();
+    findWall();
     wallSwitch();
-    if(tx < POSITION_ERROR && tx > (0 - POSITION_ERROR)
-      && ty < POSITION_ERROR && ty > (0 - POSITION_ERROR)){
-
+    updatePos();
+    if((tx < POSITION_ERROR) && (tx > (-POSITION_ERROR))
+      && (ty < POSITION_ERROR) && (ty > (-POSITION_ERROR))){
+        rState = STOP;
     }
     break;
 
@@ -148,18 +153,18 @@ void pingWall(void){
 void lcdPrintWallDist(){
   // print left
   lcd.setCursor(0,0);
-  lcd.print("L: ");
-  lcd.print(leftDist);
+  lcd.print("X: ");
+  lcd.print(tx);
 
   // print right
   lcd.setCursor(7,0);
-  lcd.print(" R: ");
-  lcd.print(rightDist);
+  lcd.print(" Y: ");
+  lcd.print(ty);
 
   // print mid
   lcd.setCursor(0,1);
-  lcd.print("M: ");
-  lcd.print(midDist);
+  lcd.print("H: ");
+  lcd.print(heading);
 
   // print closest wall
   lcd.setCursor(7,1);
@@ -243,16 +248,15 @@ void wallFollow(void){
   }
 }
 
+//turns the robot 90 degrees to avoid a corner
 void turnCorner(){
-  switch (cWall) {
+  switch (cWall) {//turns the robot right or left
     case LEFT:
-    turnDeg(-90);
-    wState = FOLLOW;
+    if(turnDeg(-90)) wState = FOLLOW;
     break;
 
     case RIGHT:
-    turnDeg(90);
-    wState = FOLLOW;
+    if(turnDeg(90)) wState = FOLLOW;
     break;
 
     case DEBUG:
@@ -265,27 +269,39 @@ void turnCorner(){
   }
 }
 
+//turns the robot around the end of a wall
 void turnEnd(){
 
 }
 
-void turnDeg(float degTurn){
-  if(degTurn < 0){
-    deg = 0;
-    Serial.println(deg);
-    while(abs(degTurn) > getDeg()){
-      turnRight();
-    }
-  } else if(degTurn > 0){
-    deg = 0;
-    Serial.println(deg);
-    while(abs(degTurn) > getDeg()){
-      turnLeft();
-    }
+//turns the robot the given number of degrees
+//either right or left
+boolean turnDeg(float degTurn){
+  switch (turning) {
+    case START:
+      deg = heading + degTurn;
+      turning = MOVING;
+      return false;
+    break;
+
+    case MOVING:
+      if(degTurn < 0 && deg < heading) turnRight();
+      else if (degTurn > 0 && deg > heading) turnLeft();
+      else{
+        turning = END;
+        regDrive(MOTOR_STOP);
+      }
+      return false;
+    break;
+
+    case END:
+      turning = START;
+      return true;
+    break;
   }
-  regDrive(MOTOR_STOP);
 }
 
+//drives straight for the given distance
 void driveDist(float dist){
   leftMouse.mouse_pos(lstat, lx, ly);
   rightMouse.mouse_pos(rstat, rx, ly);
@@ -293,24 +309,43 @@ void driveDist(float dist){
   tdist = 0;
 
   while(dist > tdist){
-    
+
   }
 
   fuMice();
 }
+//
+// float getDeg(){
+//   leftMouse.mouse_pos(lstat, lx, ly);
+//   rightMouse.mouse_pos(rstat, rx, ly);
+//
+//   double x1 = (double) lx;
+//   double x2 = (double) rx;
+//
+//   deg = deg + (((abs(x1) + abs(x2)) / 2.0) * turnConst);
+//   fuMice();
+//   return deg;
+// }
 
-float getDeg(){
+//updates the calculated position
+//of the robot with the position data from
+//the last loop
+void updatePos(){
   leftMouse.mouse_pos(lstat, lx, ly);
   rightMouse.mouse_pos(rstat, rx, ly);
 
   double x1 = (double) lx;
   double x2 = (double) rx;
 
-  deg = deg + (((abs(x1) + abs(x2)) / 2.0) * turnConst);
+  heading = heading + (((x1 - x2) / 2.0) * turnConst);
+
+  tx = tx + (((x1 + x2) / 2) * cos(heading));
+  ty = ty + (((x1 + x2) / 2) * sin(heading));
+
   fuMice();
-  return deg;
 }
 
+//resets mice
 void fuMice(){
   lstat = 0;
   lx = 0;
