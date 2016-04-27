@@ -2,10 +2,11 @@
 #define TURRET_SPEED 78
 #define TURRET_HOME 0
 #define SERVO_HOME 100
-#define SERVO_TOP 140
-#define FOUND_FLAME 500
-#define NO_FIRE 950
-#define FLAME_WAIT 10
+#define SERVO_TOP 180
+#define FOUND_FLAME 400
+#define NO_FIRE 800
+#define FLAME_WAIT 20
+#define RECHECK 200
 
 Servo tM, tS;
 Encoder enc(2, 28);
@@ -13,6 +14,7 @@ int tSpeed = TURRET_SPEED;
 boolean zeroed = false;
 int posFlame = -900;
 unsigned long nextUpDown;
+unsigned long nextCheck;
 int curPos = SERVO_HOME;
 
 turret::turret(int pinMotor, int pinServo, int pinFlameSensor, int pinPhoto, int pinFan){
@@ -104,9 +106,11 @@ boolean turret::go(int deg){
 
 //checks to see if the IR sensor has found a flame
 boolean turret::foundFlame(){
-  if(analogRead(_pFS) < FOUND_FLAME) {
+  int fintent = analogRead(_pFS);
+  if(fintent < FOUND_FLAME) {
     posFlame = enc.read();
     stop();
+
     return true;
   }
   else return false;
@@ -117,18 +121,26 @@ int turret::getPosFlame(){
   return posFlame;
 }
 
+int turret::getFlame(){
+  return analogRead(_pFS);
+}
+
 //turns on the fan to put out the flame if
 //the IR sensor sees a flame
 boolean turret::extinguish(){
-  if(analogRead(_pFS) < NO_FIRE){
+  for(unsigned long check = millis() + RECHECK; millis() < check; millis()){
     sweep(posFlame-5, posFlame+5);
+    updown();
     digitalWrite(_pF, LOW);
-    return false;
-  } else {
+  }
+  delay(10);
+
+  if(analogRead(_pFS) < NO_FIRE) {
     stop();
     digitalWrite(_pF, HIGH);
     return true;
   }
+  else extinguish();
 }
 
 //getter for the current turret encoder position

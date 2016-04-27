@@ -40,48 +40,53 @@ void setup() {
 
 void loop(void) {
  updatePos();
- lcdPrintTravelDist();
   switch (rState) {
     case INIT: // wall distance initializations
+    lcdPrintTravelDist();
     pingWall();
     findWall();
-    //lcd.setCursor(0,0);
-    //lcd.print("come @ me");
     extinguisher.zero();
-    //lcd.setCursor(0,0);
-    //lcd.print("bitch");
     rState = FIND_FLAME;
     wState = FOLLOW;
     break;
 
     case FIND_FLAME: // wall following to find flame
-    //lcd.setCursor(0,0);
-    //lcd.print("fuck you");
+    lcdPrintTravelDist();
     pingWall();
-    //lcd.setCursor(0,0);
-    //lcd.print("bleh");
     findWall();
-    //lcd.setCursor(0,0);
-    //lcd.print("fite me");
     wallSwitch();
-    if(extinguisher.foundFlame() == true) rState = TURN_FLAME;
+    if(extinguisher.foundFlame()) rState = TURN_FLAME;
     break;
 
     case TURN_FLAME:
+    lcdPrintTravelDist();
     regDrive(MOTOR_STOP);
     digitalWrite(UNO_PIN1, HIGH);
-    // turnDeg(extinguisher.getPosFlame());
-    extinguisher.go(extinguisher.getPosFlame());
-    rState = TO_FLAME;
+    switch(cWall){
+      case LEFT:
+      extinguisher.sweep(-100, 0);
+      break;
+      case RIGHT:
+      extinguisher.sweep(0, 100);
+      break;
+      case ZERO:
+      break;
+      case DEBUG:
+      break;
+      }
+    if(extinguisher.foundFlame()) rState = TO_FLAME;
     break;
 
     case TO_FLAME: // moving toward flame
+    lcdPrintTravelDist();
     digitalWrite(UNO_PIN1, HIGH);
+    extinguisher.go(extinguisher.getPosFlame());
     setCandle();
     rState = EXTINGUISH;
     break;
 
     case EXTINGUISH: // extinguishing flame
+    lcdCandle();
     digitalWrite(UNO_PIN1, HIGH);
     if(extinguisher.extinguish()) {
       rState = FIND_WALL;
@@ -90,10 +95,12 @@ void loop(void) {
     break;
 
     case FIND_WALL: // re-find and drive to wall
+    lcdCandle();
     if(turnDeg(180)) rState = GO_HOME;
     break;
 
     case GO_HOME: // wall following home
+    lcdCandle();
     pingWall();
     findWall();
     wallSwitch();
@@ -164,7 +171,7 @@ void lcdPrintTravelDist(){
   // print heading
   lcd.setCursor(0,0);
   lcd.print("H: ");
-  lcd.print(heading);
+  lcd.print(extinguisher.getFlame());
 
   // print right
   lcd.setCursor(7,0);
@@ -447,8 +454,8 @@ void updatePos(){
 }
 
 void setCandle(){
-  cx = tx + cdist * cos(heading + extinguisher.getPosFlame());
-  cy = ty + cdist * sin(heading + extinguisher.getPosFlame());
+  cx = tx + (cdist * cos(heading + extinguisher.getPosFlame()));
+  cy = ty + (cdist * sin(heading + extinguisher.getPosFlame()));
 }
 
 boolean home(){

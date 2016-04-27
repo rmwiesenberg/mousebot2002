@@ -18,6 +18,7 @@ class turret {
     int getPosFlame();
     boolean extinguish();
     long getTurretEncPos();
+    int getFlame();
 
   private:
     int _pM, _pS, _pFS, _pP, _pF;
