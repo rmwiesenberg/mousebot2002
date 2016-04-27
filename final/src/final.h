@@ -60,7 +60,7 @@ PID pid(&pidInput, &pidOutput, &pidSetpoint, Kp, Ki, Kd, DIRECT);
 
 // Turret
 #define ENCODER1_PIN 2
-#define ENCODER2_PIN 3
+#define ENCODER2_PIN 28
 #define FLAME_PIN A10
 #define PHOTO_PIN A11
 #define FAN_PIN 30
@@ -76,15 +76,34 @@ turret extinguisher(TURRET_MOTOR_PIN, TURRET_SERVO_PIN, FLAME_PIN, PHOTO_PIN, FA
 const double turnConst = 2;
 const double driveCont = 2;
 
-PS2 leftMouse(LEFT_MOUSE_CLOCK, LEFT_MOUSE_DATA);
-PS2 rightMouse(RIGHT_MOUSE_CLOCK, RIGHT_MOUSE_DATA);
+//PS2 leftMouse(LEFT_MOUSE_CLOCK, LEFT_MOUSE_DATA);
+//PS2 rightMouse(RIGHT_MOUSE_CLOCK, RIGHT_MOUSE_DATA);
 
 char lstat, lx, ly, rstat, rx, ry;
 
-unsigned int tdist;
+double tdist;
+double trDist, tlDist;
 double tx, ty;
 double heading;
 float deg;
+
+//Drive Encoders
+#define L_ENCODER1_PIN 18
+#define L_ENCODER2_PIN 3
+#define R_ENCODER1_PIN 20
+#define R_ENCODER2_PIN 19
+#define WHEEL_CIRCUM 11
+#define WHEEL_DIST 9
+#define R_ENC_MAX 360
+#define L_ENC_MAX 360
+#define HEADING_CONST 1
+
+Encoder rdenc(R_ENCODER1_PIN,R_ENCODER2_PIN);
+Encoder ldenc(L_ENCODER1_PIN,L_ENCODER2_PIN);
+
+long rEncVal, lEncVal;
+long oldrEncVal, oldlEncVal;
+double rDist, lDist;
 
 // LCD Declaration
 LiquidCrystal lcd(40, 41, 42, 43, 44, 45);
@@ -135,6 +154,8 @@ void turnRight();
 void turnLeft();
 void pingWall(void);
 void lcdPrintWallDist(void);
+void lcdPrintTravelDist(void);
+void lcdPrintEncVals(void);
 void findWall(void);
 void wallSwitch(void);
 void wallFollow(void);
@@ -142,5 +163,6 @@ void turnCorner(void);
 void turnEnd(void);
 boolean turnDeg(float degTurn);
 float getDeg(void);
-void updatePos();
-void fuMice();
+void driveDist(double dist);
+void updatePos(void);
+void distDriven(void);
