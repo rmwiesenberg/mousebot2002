@@ -2,20 +2,22 @@
 #define TURRET_SPEED 78
 #define TURRET_HOME 0
 #define SERVO_HOME 100
-#define SERVO_TOP 180
-#define FOUND_FLAME 225
+#define SERVO_DOWN 0
+#define SERVO_UP 120
+#define FOUND_FLAME 350
 #define NO_FIRE 800
-#define FLAME_WAIT 20
-#define RECHECK 10000
+#define FLAME_WAIT 100
+#define RECHECK 20000
 
 Servo tM, tS;
 Encoder enc(2, 28);
 int tSpeed = TURRET_SPEED;
 boolean zeroed = false;
+boolean up = false;
 int posFlame = -900;
-unsigned long nextUpDown;
+unsigned long nextUpDown = 0;
 unsigned long nextCheck;
-int curPos = SERVO_HOME;
+int curPos;
 
 turret::turret(int pinMotor, int pinServo, int pinFlameSensor, int pinPhoto, int pinFan){
   _pM = pinMotor;
@@ -60,8 +62,13 @@ void turret::sweep(int low, int high){
 
 void turret::updown(){
   if(millis() > nextUpDown){
-    if(curPos == SERVO_HOME) curPos = SERVO_TOP;
-    if(curPos == SERVO_TOP) curPos = SERVO_HOME;
+    if(up) {
+      curPos = SERVO_DOWN;
+      up = false;
+    } else if(!up) {
+      curPos = SERVO_UP;
+      up = true;
+    }
     nextUpDown = millis() + FLAME_WAIT;
   }
   tS.write(curPos);
@@ -136,7 +143,7 @@ boolean turret::extinguish(){
     digitalWrite(_pF, LOW);
     ctime = millis();
   }
-  delay(10);
+  delay(100);
 
   if(analogRead(_pFS) > NO_FIRE) {
     stop();

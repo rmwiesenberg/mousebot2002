@@ -434,8 +434,8 @@ void distDriven(){
   rd = (double) (rEncVal-oldrEncVal);
   ld = (double) (lEncVal-oldlEncVal);
 
-  rDist = (rd * ratio) * (circum / encMaxVal);
-  lDist = (ld * ratio) * (circum / encMaxVal);
+  rDist = (rd * ratio) * (circum / encMaxVal) * driveConst;
+  lDist = (ld * ratio) * (circum / encMaxVal) * driveConst;
 
   oldrEncVal = rEncVal;
   oldlEncVal = lEncVal;
