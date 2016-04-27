@@ -14,6 +14,8 @@ void setup() {
 
   // Serial port for debugging
   Serial.begin(9600);
+  Serial.print(30);
+
 
   // LCD Start
   lcd.begin(16,2);
@@ -38,20 +40,29 @@ void setup() {
 
 void loop(void) {
  updatePos();
+ lcdPrintWallDist();
   switch (rState) {
     case INIT: // wall distance initializations
     pingWall();
     findWall();
+    //lcd.setCursor(0,0);
+    //lcd.print("come @ me");
     extinguisher.zero();
-    lcdPrintEncVals();
+    //lcd.setCursor(0,0);
+    //lcd.print("bitch");
     rState = FIND_FLAME;
     wState = FOLLOW;
     break;
 
     case FIND_FLAME: // wall following to find flame
+    //lcd.setCursor(0,0);
+    //lcd.print("fuck you");
     pingWall();
+    //lcd.setCursor(0,0);
+    //lcd.print("bleh");
     findWall();
-    lcdPrintEncVals();
+    //lcd.setCursor(0,0);
+    //lcd.print("fite me");
     wallSwitch();
     if(extinguisher.foundFlame() == true) rState = TURN_FLAME;
     break;
@@ -66,6 +77,7 @@ void loop(void) {
 
     case TO_FLAME: // moving toward flame
     digitalWrite(UNO_PIN1, HIGH);
+    setCandle();
     rState = EXTINGUISH;
     break;
 
@@ -78,22 +90,21 @@ void loop(void) {
     break;
 
     case FIND_WALL: // re-find and drive to wall
-    turnDeg(180);
-    rState = GO_HOME;
+    if(turnDeg(180)) rState = GO_HOME;
     break;
 
     case GO_HOME: // wall following home
     pingWall();
     findWall();
     wallSwitch();
-    if((tx < POSITION_ERROR) && (tx > (-POSITION_ERROR))
-      && (ty < POSITION_ERROR) && (ty > (-POSITION_ERROR))){
-        rState = STOP;
-    }
+    if(home()) rState = STOP;
     break;
 
     case STOP: // made it home
-    regDrive(MOTOR_STOP);
+    while(1){
+      regDrive(MOTOR_STOP);
+      lcdCandle();
+    }
     break;
   }
 }
@@ -188,18 +199,18 @@ void lcdPrintTravelDist(){
 void lcdPrintEncVals(){
   // print turret enc
   lcd.setCursor(0,0);
-  lcd.print("T: ");
-  lcd.print(extinguisher.getTurretEncPos());
+  lcd.print("D: ");
+  lcd.print(deg);
 
   // print left drive enc
   lcd.setCursor(7,0);
   lcd.print(" L: ");
-  lcd.print(ldenc.read());
+  lcd.print(ld);
 
   // print right drive enc
   lcd.setCursor(0,1);
   lcd.print("R: ");
-  lcd.print(rdenc.read());
+  lcd.print(rd);
 
   //print heading
   lcd.setCursor(7,1);
@@ -221,8 +232,8 @@ void lcdPrintWallDist(){
 
   // print mid
   lcd.setCursor(0,1);
-  lcd.print("M: ");
-  lcd.print(midDist);
+  lcd.print("F: ");
+  lcd.print(extinguisher.getPosFlame());
 
   // print closest wall
   lcd.setCursor(7,1);
@@ -241,6 +252,18 @@ void lcdPrintWallDist(){
     lcd.print("D");
     break;
   }
+}
+
+void lcdCandle(){
+  // print left
+  lcd.setCursor(0,0);
+  lcd.print("X: ");
+  lcd.print(cx);
+
+  // print mid
+  lcd.setCursor(0,1);
+  lcd.print("Y: ");
+  lcd.print(cy);
 }
 
 // determines closest wall - left or right
@@ -331,64 +354,11 @@ void turnCorner(){
 
 //turns the robot around the end of a wall
 void turnEnd(){
-
-  regDrive(MOTOR_STOP);
-
-  driveDist(3);
-
-switch(cWall){//turns the robot right or left
-  case LEFT:
-  if(turnDeg(-90)) {
-    break;
-  }
-  break;
-
-  case RIGHT:
-  if(turnDeg(90)) {
-    break;
-  }
-  break;
-
-  case DEBUG:
-  regDrive(MOTOR_STOP);
-  break;
-
-  case ZERO:
-  regDrive(MOTOR_STOP);
-  break;
-}
-
-driveDist(7);
-
-switch(cWall){//turns the robot right or left
-  case LEFT:
-  if(turnDeg(-90)){
-    break;
-  }
-  break;
-
-  case RIGHT:
-  if(turnDeg(90)){
-    break;
-  }
-  break;
-
-  case DEBUG:
-  regDrive(MOTOR_STOP);
-  break;
-
-  case ZERO:
-  regDrive(MOTOR_STOP);
-  break;
-}
-
-driveDist(5);
-
 }
 
 //turns the robot the given number of degrees
 //either right or left
-boolean turnDeg(float degTurn){
+boolean turnDeg(double degTurn){
   switch (turning) {
     case START:
       regDrive(MOTOR_STOP);
@@ -398,12 +368,12 @@ boolean turnDeg(float degTurn){
     break;
 
     case MOVING:
-      if(degTurn < 0 && deg <= heading) {
-        updatePos();
+      if(deg < 0 && deg <= heading) {
         turnRight();
-      } else if (degTurn > 0 && deg >= heading) {
         updatePos();
+      } else if (deg > 0 && deg >= heading) {
         turnLeft();
+        updatePos();
       } else {
         turning = END;
         regDrive(MOTOR_STOP);
@@ -418,7 +388,7 @@ boolean turnDeg(float degTurn){
   }
 }
 
-//drives straight for the given distance
+// drives straight for the given distance
 void driveDist(double dist){
   long initrEncVal = rdenc.read();
   long initlEncVal = ldenc.read();
@@ -428,15 +398,15 @@ void driveDist(double dist){
 
   while(dist > trdist && dist > tldist){
     regDrive(MOTOR_STOP + REG_SPEED);
-    trdist = (rdenc.read() - initrEncVal) * (WHEEL_CIRCUM / R_ENC_MAX);
-    tldist = (ldenc.read() - initlEncVal) * (WHEEL_CIRCUM / L_ENC_MAX);
+    trdist = (rdenc.read() - initrEncVal) * (circum / encMaxVal);
+    tldist = (ldenc.read() - initlEncVal) * (circum / encMaxVal);
   }
 
   regDrive(MOTOR_STOP);
   updatePos();
 
 }
-//
+
 // float getDeg(){
 //   leftMouse.mouse_pos(lstat, lx, ly);
 //   rightMouse.mouse_pos(rstat, rx, ly);
@@ -454,8 +424,11 @@ void distDriven(){
   rEncVal = rdenc.read();
   lEncVal = ldenc.read();
 
-  rDist = (rEncVal-oldrEncVal) * (WHEEL_CIRCUM / R_ENC_MAX);
-  lDist = (lEncVal-oldlEncVal) * (WHEEL_CIRCUM / L_ENC_MAX);
+  rd = (double) (rEncVal-oldrEncVal);
+  ld = (double) (lEncVal-oldlEncVal);
+
+  rDist = (rd * ratio) * (circum / encMaxVal);
+  lDist = (ld * ratio) * (circum / encMaxVal);
 
   oldrEncVal = rEncVal;
   oldlEncVal = lEncVal;
@@ -467,8 +440,17 @@ void distDriven(){
 void updatePos(){
   distDriven();
 
-  heading = heading + ((rDist-lDist) * HEADING_CONST);
+  heading = heading + ((rDist-lDist) * turnConst);
 
-  tx = tx + (((rDist + lDist) / 2) * cos(heading));
-  ty = ty + (((rDist + lDist) / 2) * sin(heading));
+  tx = tx + ((((ld + rd) / 2) * ratio) * (circum / encMaxVal) * cos(heading));
+  ty = ty + ((((ld + rd) / 2) * ratio) * (circum / encMaxVal) * sin(heading));
+}
+
+void setCandle(){
+  cx = tx + cdist * cos(heading + extinguisher.getPosFlame());
+  cy = ty + cdist * sin(heading + extinguisher.getPosFlame());
+}
+
+boolean home(){
+  return ((tx < 4) && (tx > -4) && (ty < 4) && (ty > -4));
 }

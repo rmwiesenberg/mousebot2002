@@ -48,7 +48,7 @@ double rightDist, midDist, leftDist;
 #define MIN_SPEED 20
 #define MAX_PID_SPEED 50
 #define REG_SPEED 25
-#define TURN_SPEED 20
+#define TURN_SPEED 25
 
 // Variables for PID
 double pidInput, pidOutput, pidSetpoint;
@@ -73,30 +73,32 @@ turret extinguisher(TURRET_MOTOR_PIN, TURRET_SERVO_PIN, FLAME_PIN, PHOTO_PIN, FA
 #define RIGHT_MOUSE_CLOCK 31
 #define RIGHT_MOUSE_DATA 29
 #define POSITION_ERROR 4
-const double turnConst = 2;
+const double turnConst = 1.95;
 const double driveCont = 2;
+const double cdist = 5;
 
 //PS2 leftMouse(LEFT_MOUSE_CLOCK, LEFT_MOUSE_DATA);
 //PS2 rightMouse(RIGHT_MOUSE_CLOCK, RIGHT_MOUSE_DATA);
 
 char lstat, lx, ly, rstat, rx, ry;
 
+double ld, rd;
 double tdist;
 double trDist, tlDist;
 double tx, ty;
+double cx, cy;
 double heading;
-float deg;
+double deg;
 
 //Drive Encoders
 #define L_ENCODER1_PIN 18
 #define L_ENCODER2_PIN 3
 #define R_ENCODER1_PIN 20
 #define R_ENCODER2_PIN 19
-#define WHEEL_CIRCUM 11
 #define WHEEL_DIST 9
-#define R_ENC_MAX 360
-#define L_ENC_MAX 360
-#define HEADING_CONST 1
+const double encMaxVal = 360;
+const double circum = 11;
+const double ratio = 1.6667; //36:60
 
 Encoder rdenc(R_ENCODER1_PIN,R_ENCODER2_PIN);
 Encoder ldenc(L_ENCODER1_PIN,L_ENCODER2_PIN);
@@ -156,13 +158,16 @@ void pingWall(void);
 void lcdPrintWallDist(void);
 void lcdPrintTravelDist(void);
 void lcdPrintEncVals(void);
+void lcdCandle(void);
 void findWall(void);
 void wallSwitch(void);
 void wallFollow(void);
 void turnCorner(void);
 void turnEnd(void);
-boolean turnDeg(float degTurn);
+boolean turnDeg(double degTurn);
 float getDeg(void);
 void driveDist(double dist);
 void updatePos(void);
 void distDriven(void);
+void setCandle(void);
+boolean home(void);
