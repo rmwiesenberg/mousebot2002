@@ -10,6 +10,7 @@ class turret {
     void turretSetup();
     void zero();
     void sweep(int low, int high);
+    void updown();
     void stop();
     boolean home();
     boolean go(int deg);

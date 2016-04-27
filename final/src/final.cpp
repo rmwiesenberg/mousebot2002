@@ -40,7 +40,7 @@ void setup() {
 
 void loop(void) {
  updatePos();
- lcdPrintWallDist();
+ lcdPrintTravelDist();
   switch (rState) {
     case INIT: // wall distance initializations
     pingWall();
