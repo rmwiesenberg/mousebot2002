@@ -3,7 +3,7 @@
 #define TURRET_HOME 0
 #define SERVO_HOME 100
 #define FOUND_FLAME 500
-#define NO_FIRE 1000
+#define NO_FIRE 800
 
 Servo tM, tS;
 Encoder enc(2, 28);
@@ -26,13 +26,14 @@ void turret::turretSetup(){
   pinMode(_pP, INPUT);
   pinMode(_pFS, INPUT);
   pinMode(_pF, OUTPUT);
+  digitalWrite(_pF, LOW);
   enc.write(TURRET_HOME);
 }
 
 //calculates the correct home position
 //for the turret using a photoresistor
 void turret::zero(){
-  while(analogRead(_pP) < 700 && !zeroed){
+  while(analogRead(_pP) < 750 && !zeroed){
     sweep(-90, 90);
   }
   zeroed = true;
@@ -45,8 +46,8 @@ void turret::zero(){
 // high and low position
 void turret::sweep(int low, int high){
   if(enc.read() <= low || enc.read() >= high){
-    if (enc.read() < TURRET_HOME) tSpeed = 180 - TURRET_SPEED;
-    if (enc.read() > TURRET_HOME) tSpeed = TURRET_SPEED;
+    if (enc.read() < low) tSpeed = 180 - TURRET_SPEED;
+    if (enc.read() > high) tSpeed = TURRET_SPEED;
   }
   tM.write(tSpeed);
 }
@@ -107,9 +108,14 @@ int turret::getPosFlame(){
 //the IR sensor sees a flame
 boolean turret::extinguish(){
   if(analogRead(_pFS) < NO_FIRE){
+    sweep(posFlame-5, posFlame+5);
     digitalWrite(_pF, HIGH);
     return false;
-  } else return true;
+  } else {
+    stop();
+    digitalWrite(_pF, LOW);
+    return true;
+  }
 }
 
 //getter for the current turret encoder position
