@@ -3,10 +3,10 @@
 #define TURRET_HOME 0
 #define SERVO_HOME 100
 #define SERVO_TOP 180
-#define FOUND_FLAME 400
+#define FOUND_FLAME 225
 #define NO_FIRE 800
 #define FLAME_WAIT 20
-#define RECHECK 200
+#define RECHECK 10000
 
 Servo tM, tS;
 Encoder enc(2, 28);
@@ -128,14 +128,17 @@ int turret::getFlame(){
 //turns on the fan to put out the flame if
 //the IR sensor sees a flame
 boolean turret::extinguish(){
-  for(unsigned long check = millis() + RECHECK; millis() < check; millis()){
-    sweep(posFlame-5, posFlame+5);
+  unsigned long check = millis() + RECHECK;
+  unsigned long ctime = millis();
+  while(ctime < check){
+    sweep(posFlame-3, posFlame+3);
     updown();
     digitalWrite(_pF, LOW);
+    ctime = millis();
   }
   delay(10);
 
-  if(analogRead(_pFS) < NO_FIRE) {
+  if(analogRead(_pFS) > NO_FIRE) {
     stop();
     digitalWrite(_pF, HIGH);
     return true;
