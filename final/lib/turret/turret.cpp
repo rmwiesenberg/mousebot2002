@@ -2,9 +2,9 @@
 #define TURRET_SPEED 78
 #define TURRET_HOME 0
 #define SERVO_HOME 100
-#define SERVO_DOWN 0
-#define SERVO_UP 120
-#define FOUND_FLAME 350
+#define SERVO_DOWN 80
+#define SERVO_UP 110
+#define FOUND_FLAME 200
 #define NO_FIRE 800
 #define FLAME_WAIT 100
 #define RECHECK 20000

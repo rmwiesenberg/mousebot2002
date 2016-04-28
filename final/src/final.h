@@ -73,7 +73,7 @@ turret extinguisher(TURRET_MOTOR_PIN, TURRET_SERVO_PIN, FLAME_PIN, PHOTO_PIN, FA
 #define RIGHT_MOUSE_CLOCK 31
 #define RIGHT_MOUSE_DATA 29
 #define POSITION_ERROR 4
-const double turnConst = 1.95;
+const double turnConst = .65;
 const double driveConst = 5.5;
 const double cdist = 5;
 

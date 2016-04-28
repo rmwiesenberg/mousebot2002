@@ -171,7 +171,7 @@ void lcdPrintTravelDist(){
   // print heading
   lcd.setCursor(0,0);
   lcd.print("H: ");
-  lcd.print(extinguisher.getFlame());
+  lcd.print(heading);
 
   // print right
   lcd.setCursor(7,0);
