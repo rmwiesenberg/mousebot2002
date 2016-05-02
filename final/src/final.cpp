@@ -52,10 +52,7 @@ void loop(void) {
 
     case FIND_FLAME: // wall following to find flame
     lcdPrintTravelDist();
-    pingWall();
-    findWall();
-    wallSwitch();
-    if(extinguisher.foundFlame()) rState = TURN_FLAME;
+    driveThere();
     break;
 
     case TURN_FLAME:
@@ -460,4 +457,62 @@ void setCandle(){
 
 boolean home(){
   return ((tx < 4) && (tx > -4) && (ty < 4) && (ty > -4));
+}
+
+void driveThere(){
+  while(millis() < t1){
+    lcdPrintWallDist();
+    pingWall();
+    findWall();
+    wallFollow();
+  }
+
+  regDrive(MOTOR_STOP);
+
+  while(millis() < t2){
+    turnRight();
+  }
+
+  regDrive(MOTOR_STOP);
+
+  while(millis() < t3){
+    lcdPrintWallDist();
+    pingWall();
+    findWall();
+    wallFollow();
+  }
+
+  regDrive(MOTOR_STOP);
+  rState = TURN_FLAME;
+}
+
+void driveHome(){
+  st2 = millis();
+  while(millis() < (t4 + st2)){
+    turnRight();
+  }
+
+  regDrive(MOTOR_STOP);
+
+  while(millis() < (t5 + st2)){
+    lcdPrintWallDist();
+    pingWall();
+    findWall();
+    wallFollow();
+  }
+
+  regDrive(MOTOR_STOP);
+
+  while(millis() < (t6 + st2)){
+    turnLeft();
+  }
+
+  regDrive(MOTOR_STOP);
+
+  while(millis() < (t7 + st2)){
+    lcdPrintWallDist();
+    pingWall();
+    findWall();
+    wallFollow();
+  }
 }
