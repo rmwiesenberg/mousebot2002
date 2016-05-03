@@ -1,7 +1,7 @@
 #include "turret.h"
 #define TURRET_SPEED 78
 #define TURRET_HOME 0
-#define SERVO_HOME 100
+#define SERVO_HOME 95
 #define SERVO_DOWN 80
 #define SERVO_UP 110
 #define FOUND_FLAME 200
@@ -139,7 +139,7 @@ boolean turret::extinguish(){
   unsigned long ctime = millis();
   while(ctime < check){
     sweep(posFlame-3, posFlame+3);
-    updown();
+    //updown();
     digitalWrite(_pF, LOW);
     ctime = millis();
   }

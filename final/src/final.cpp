@@ -93,15 +93,12 @@ void loop(void) {
 
     case FIND_WALL: // re-find and drive to wall
     lcdCandle();
-    if(turnDeg(180)) rState = GO_HOME;
+    rState = GO_HOME;
     break;
 
     case GO_HOME: // wall following home
     lcdCandle();
-    pingWall();
-    findWall();
-    wallSwitch();
-    if(home()) rState = STOP;
+    driveHome();
     break;
 
     case STOP: // made it home
@@ -138,7 +135,7 @@ void wallSwitch(){
     case FOLLOW: // following wall
     wallFollow();
 
-    if(midDist < MIN_FRONT_DIST) wState = CORNER;
+    // if(midDist < MIN_FRONT_DIST) wState = CORNER;
     // if(cWall == LEFT && leftDist > MAX_DIST) wState = WALL_END;
     // if(cWall == RIGHT && rightDist > MAX_DIST) wState = WALL_END;
 
@@ -451,8 +448,8 @@ void updatePos(){
 }
 
 void setCandle(){
-  cx = tx + (cdist * cos(heading + extinguisher.getPosFlame()));
-  cy = ty + (cdist * sin(heading + extinguisher.getPosFlame()));
+  cx = 101.35;
+  cy = 63.45;
 }
 
 boolean home(){
@@ -460,10 +457,10 @@ boolean home(){
 }
 
 void driveThere(){
+  cWall = LEFT;
   while(millis() < t1){
     lcdPrintWallDist();
     pingWall();
-    findWall();
     wallFollow();
   }
 
@@ -478,7 +475,6 @@ void driveThere(){
   while(millis() < t3){
     lcdPrintWallDist();
     pingWall();
-    findWall();
     wallFollow();
   }
 
@@ -487,9 +483,10 @@ void driveThere(){
 }
 
 void driveHome(){
+  cWall = RIGHT;
   st2 = millis();
   while(millis() < (t4 + st2)){
-    turnRight();
+    turnLeft();
   }
 
   regDrive(MOTOR_STOP);
@@ -497,7 +494,6 @@ void driveHome(){
   while(millis() < (t5 + st2)){
     lcdPrintWallDist();
     pingWall();
-    findWall();
     wallFollow();
   }
 
@@ -512,7 +508,8 @@ void driveHome(){
   while(millis() < (t7 + st2)){
     lcdPrintWallDist();
     pingWall();
-    findWall();
     wallFollow();
   }
+
+   rState = STOP;
 }

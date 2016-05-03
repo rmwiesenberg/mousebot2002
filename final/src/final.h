@@ -114,14 +114,14 @@ LiquidCrystal lcd(40, 41, 42, 43, 44, 45);
 #define UNO_PIN1 33
 
 // DedDrive
-unsigned long t1 = 29500;
+unsigned long t1 = 24500;
 unsigned long t2 = t1 + 3000;
-unsigned long t3 = t2 + 12000;
+unsigned long t3 = t2 + 10000;
 unsigned long st2;
-unsigned long t4 = 6000;
+unsigned long t4 = 4500;
 unsigned long t5 = t4 + 12000;
-unsigned long t6 = t5 + 3000;
-unsigned long t7 = t6 + 29500;
+unsigned long t6 = t5 + 2500;
+unsigned long t7 = t6 + 24500;
 
 // States for General Robot Running
 enum robotState{
@@ -182,3 +182,4 @@ void distDriven(void);
 void setCandle(void);
 boolean home(void);
 void driveThere();
+void driveHome();
